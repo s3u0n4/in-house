@@ -48,11 +48,14 @@ src/test/java/com/inhouse/inhouse_manager/
 - [x] `PlayerRepository` 작성 (`findByRiotId`, `existsByRiotId`)
 - [x] `PlayerRepositoryTest` (`@DataJpaTest`, 테스트 2개: 저장 후 riotId 조회 / 없는 riotId는 false) — 2026-11-19 통과 확인
   - 테스트 메서드 이름은 한글로 쓰는 방식을 사용 중 (main 코드 이름은 영어)
-- [ ] `PlayerRepository`, `PlayerRepositoryTest`, `CLAUDE.md` 커밋 전
+  - 커밋: "PlayerRepository 및 테스트 추가"
+- [ ] **진행 중:** `PlayerService` (등록 시 riotId 중복 막기, 전체 조회, id로 조회) + `PlayerServiceTest`
+  - 서비스 테스트는 `@DataJpaTest` + `@Import(PlayerService.class)`로 작성한다 (메모리 DB 사용, 실행 중인 앱의 파일 DB와 충돌하지 않음).
+  - 의존성 주입은 `private final` 필드 + Lombok `@RequiredArgsConstructor` (생성자 주입).
+  - 예외는 당분간 `IllegalArgumentException` 사용. 나중에 Controller 단계에서 예외 처리 방식을 정리할 예정.
 
 ## 다음 할 일
-1. 지금까지 작업 커밋 (Repository, 테스트, CLAUDE.md)
-2. `PlayerService`: 플레이어 등록 (같은 riotId 중복 등록 막기), 조회
-3. 화면 방식 결정 (Thymeleaf vs REST API)
-4. Controller: 플레이어 등록/목록 화면 또는 API
-5. Match, MatchParticipant 엔티티 → 경기 기록 → 전적 조회 → 팀 밸런스 나누기
+1. `PlayerService` 작성 → `PlayerServiceTest` 통과 → 커밋
+2. 화면 방식 결정 (Thymeleaf vs REST API)
+3. Controller: 플레이어 등록/목록 화면 또는 API
+4. Match, MatchParticipant 엔티티 → 경기 기록 → 전적 조회 → 팀 밸런스 나누기
