@@ -62,7 +62,9 @@ src/test/java/com/inhouse/inhouse_manager/
 - [x] Thymeleaf 의존성 추가, `PlayerController`(`@Controller`, `GET /players`) + `templates/players.html` 목록 화면 작성 (2026-11-23). 브라우저에서 빈 목록 안내 문구가 나오는 것을 확인했다.
 
 ## 다음 할 일
-> **현재 위치 (2026-11-23):** `spring-boot-starter-thymeleaf` 의존성 추가를 확인했다 (Gradle에서 thymeleaf 3.1.5가 받아짐). 이 줄이 test 의존성들 사이에 있어서, `implementation` 줄들 쪽으로 옮기라고 권했다 (동작에는 영향 없음). `PlayerController`(`GET /players`)와 `templates/players.html`(th:each 표, 빈 목록 안내)을 작성했다. `/players`가 200을 응답하고 "등록된 플레이어가 없습니다."가 나오는 것을 확인했다. 아직 커밋하지 않았다. 다음은 H2 콘솔에서 데이터를 넣어 표를 확인하고, 커밋한 뒤 2번(등록 폼)으로 가는 것이다.
+> **현재 위치 (2026-11-23):** `spring-boot-starter-thymeleaf` 의존성 추가를 확인했다 (Gradle에서 thymeleaf 3.1.5가 받아짐). 이 줄이 test 의존성들 사이에 있어서, `implementation` 줄들 쪽으로 옮기라고 권했다 (동작에는 영향 없음). 1번 단계를 마치고 커밋했다 ("플레이어 목록 화면 추가"). 2번 단계는 둘로 나눠 진행한다. 지금은 2-A(`PlayerForm` 폼 객체, `GET /players/new` 폼 화면 `player-form.html`, `POST /players` 저장 후 `redirect:/players`)를 설명했고, 사용자가 작성 중이다. 2-B(`@Valid` 검증, riotId 중복 에러를 폼에 표시)는 그다음에 설명한다.
+> - 2-A 작성 상황 (2026-11-23): `PlayerForm`, `player-form.html`, Controller 메서드 2개를 작성했다. `create`의 `@PostMapping`과 `players.html`의 등록 링크를 고쳤다. 서버를 재시작한 뒤 폼으로 등록해서 목록에 나오는 것까지 확인했다. **2-A 완료.** 아직 커밋하지 않았다(커밋 메시지 예: "플레이어 등록 폼 추가"). `player-form.html`에는 아직 `<!doctype html>`이 없다. 다음은 2-B다. 사용자가 IntelliJ의 빨간 줄에 대해 물어서, `<label for>`가 `th:field`로 만들어지는 id를 못 찾아서 생기는 경고일 가능성이 높다고 설명했다.
+> - 폼 객체(`PlayerForm`)는 엔티티가 아니라서 `@Getter @Setter`를 써도 된다고 설명했다. Spring이 폼 값을 setter로 채우기 때문이다.
 
 1. Thymeleaf 의존성 추가 (`spring-boot-starter-thymeleaf`) → `PlayerController` (`@Controller`, `GET /players`) + `templates/players.html` 목록 화면 → 브라우저에서 확인
 2. 플레이어 등록 폼 (`GET /players/new` 폼 화면, `POST /players` 저장 후 리다이렉트), 폼 데이터 객체와 `@Valid` 검증, riotId 중복 예외를 화면에 표시하는 방법

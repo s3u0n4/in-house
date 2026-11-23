@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 
 @Controller
 @RequiredArgsConstructor
@@ -14,5 +16,22 @@ public class PlayerController {
     public String list(Model model) {
         model.addAttribute("players", playerService.findAll());
         return "players";
+    }
+
+    @GetMapping("/players/new")
+    public String createForm(Model model){
+        model.addAttribute("playerForm", new PlayerForm());
+        model.addAttribute("positions", Position.values());
+        return "player-form";
+    }
+    @PostMapping("/players")
+    public String create(@ModelAttribute PlayerForm playerForm){
+        playerService.register(
+                playerForm.getName(),
+                playerForm.getRiotId(),
+                playerForm.getMainPosition(),
+                playerForm.getSubPosition()
+        );
+        return "redirect:/players";
     }
 }
