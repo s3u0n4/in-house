@@ -37,3 +37,7 @@ out/
 .vscode/
 data/
 .DS_Store
+
+### Claude Code skills (외부에서 설치, 용량 큼) ###
+.claude/skills/
+skills-lock.json
