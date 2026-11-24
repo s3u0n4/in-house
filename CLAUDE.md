@@ -60,10 +60,14 @@ src/test/java/com/inhouse/inhouse_manager/
 
 - [x] 화면 방식 결정: Thymeleaf (2026-11-20). 입문자라 Java+HTML만으로 결과를 바로 볼 수 있는 쪽을 골랐다.
 - [x] Thymeleaf 의존성 추가, `PlayerController`(`@Controller`, `GET /players`) + `templates/players.html` 목록 화면 작성 (2026-11-23). 브라우저에서 빈 목록 안내 문구가 나오는 것을 확인했다.
+- [x] 플레이어 등록 폼 (2026-11-24): `PlayerForm`(`@Getter @Setter`, `@NotBlank`/`@NotNull`), `GET /players/new`, `POST /players`(`@Valid` + `BindingResult`, 중복 riotId는 `rejectValue`, 성공하면 PRG redirect), `player-form.html`(`th:field`, `th:errors`).
 
 ## 다음 할 일
 > **현재 위치 (2026-11-23):** `spring-boot-starter-thymeleaf` 의존성 추가를 확인했다 (Gradle에서 thymeleaf 3.1.5가 받아짐). 이 줄이 test 의존성들 사이에 있어서, `implementation` 줄들 쪽으로 옮기라고 권했다 (동작에는 영향 없음). 1번 단계를 마치고 커밋했다 ("플레이어 목록 화면 추가"). 2번 단계는 둘로 나눠 진행한다. 지금은 2-A(`PlayerForm` 폼 객체, `GET /players/new` 폼 화면 `player-form.html`, `POST /players` 저장 후 `redirect:/players`)를 설명했고, 사용자가 작성 중이다. 2-B(`@Valid` 검증, riotId 중복 에러를 폼에 표시)는 그다음에 설명한다.
-> - 2-A 작성 상황 (2026-11-23): `PlayerForm`, `player-form.html`, Controller 메서드 2개를 작성했다. `create`의 `@PostMapping`과 `players.html`의 등록 링크를 고쳤다. 서버를 재시작한 뒤 폼으로 등록해서 목록에 나오는 것까지 확인했다. **2-A 완료.** 아직 커밋하지 않았다(커밋 메시지 예: "플레이어 등록 폼 추가"). `player-form.html`에는 아직 `<!doctype html>`이 없다. 다음은 2-B다. 사용자가 IntelliJ의 빨간 줄에 대해 물어서, `<label for>`가 `th:field`로 만들어지는 id를 못 찾아서 생기는 경고일 가능성이 높다고 설명했다.
+> - 2-A 작성 상황 (2026-11-23): `PlayerForm`, `player-form.html`, Controller 메서드 2개를 작성했다. `create`의 `@PostMapping`과 `players.html`의 등록 링크를 고쳤다. 서버를 재시작한 뒤 폼으로 등록해서 목록에 나오는 것까지 확인했다. **2-A 완료**, 커밋: "플레이어 등록 폼 추가" (doctype도 추가함).
+> - 2-B 설명 완료 (2026-11-24), 사용자가 작성 중이다. 내용: `PlayerForm`에 `@NotBlank`(name, riotId)와 `@NotNull`(mainPosition)을 붙이고, `create(@Valid @ModelAttribute PlayerForm, BindingResult, Model)`에서 `hasErrors`이면 폼을 다시 보여준다. 중복 riotId는 `IllegalArgumentException`을 catch해서 `bindingResult.rejectValue("riotId", ...)`로 처리하고, 화면에는 `#fields.hasErrors`와 `th:errors`로 표시한다. 에러로 폼을 다시 보여줄 때도 `positions`를 다시 담아야 한다는 점을 강조했다.
+> - 2-B 1차 점검 (2026-11-24): Controller는 맞게 작성했다. 고칠 것 3개를 알려줬다. ① `PlayerForm.mainPosition`에 `@NotNull` 대신 `@NotBlank`를 붙였다(enum에는 쓸 수 없어서 검증할 때 예외 발생). ② `player-form.html`의 주 포지션 에러 `<p>`가 `<select>` 안에 들어가 있다. ③ `hasErrors('mainPositions')`에 오타가 있다(끝에 s). 이 때문에 `GET /players/new`가 500이 났다.
+> - 2-B 2차 점검 (2026-11-24): 세 가지를 모두 고쳤다. 실행 중인 서버에 요청을 보내 확인했다. 빈칸으로 제출하면 에러 문구 3개가 나오고 포지션 목록도 유지된다. 중복 riotId로 제출하면 중복 문구가 나오고, 입력값이 유지되며, DB에 저장되지 않는다. 모두 200 응답이었다. **2-B 완료**, 아직 커밋하지 않았다(커밋 메시지 예: "플레이어 등록 입력 검증 추가"). 다음은 3번 단계(Match, MatchParticipant 엔티티)다. 사용자가 IntelliJ의 빨간 줄에 대해 물어서, `<label for>`가 `th:field`로 만들어지는 id를 못 찾아서 생기는 경고일 가능성이 높다고 설명했다.
 > - 폼 객체(`PlayerForm`)는 엔티티가 아니라서 `@Getter @Setter`를 써도 된다고 설명했다. Spring이 폼 값을 setter로 채우기 때문이다.
 
 1. Thymeleaf 의존성 추가 (`spring-boot-starter-thymeleaf`) → `PlayerController` (`@Controller`, `GET /players`) + `templates/players.html` 목록 화면 → 브라우저에서 확인
