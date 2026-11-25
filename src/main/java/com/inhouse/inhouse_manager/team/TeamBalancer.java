@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 10명을 실력이 비슷한 두 팀으로 나누고, 팀마다 포지션을 배치한다.
@@ -138,6 +139,28 @@ public class TeamBalancer {
                 .max(Comparator.comparingInt(TeamSplit::fit)
                         .thenComparing(Comparator.comparingDouble(TeamSplit::cost).reversed()))
                 .orElseThrow();
+    }
+
+    /**
+     * 같은 포지션끼리 짝지은 두 사람(블루 TOP ↔ 레드 TOP ...) 중 positions에 든 쌍을 서로 맞바꾼다.
+     * 포지션은 그대로라서 포지션 적합도는 변하지 않는다.
+     */
+    public TeamSplit swapPairs(TeamSplit split, Set<Position> positions) {
+        List<Assignment> blue = new ArrayList<>();
+        List<Assignment> red = new ArrayList<>();
+        // 두 팀 모두 포지션 순서로 정렬되어 있어서 같은 번째끼리 같은 포지션이다
+        for (int i = 0; i < TEAM_SIZE; i++) {
+            Assignment blueSlot = split.blue().assignments().get(i);
+            Assignment redSlot = split.red().assignments().get(i);
+            if (positions.contains(blueSlot.position())) {
+                blue.add(new Assignment(redSlot.player(), blueSlot.position()));
+                red.add(new Assignment(blueSlot.player(), redSlot.position()));
+            } else {
+                blue.add(blueSlot);
+                red.add(redSlot);
+            }
+        }
+        return new TeamSplit(new Lineup(blue), new Lineup(red));
     }
 
     /** 5명을 5개 포지션에 배치하는 120가지 중 적합도가 가장 높은 배치 */

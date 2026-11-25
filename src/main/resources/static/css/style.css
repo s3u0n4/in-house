@@ -231,6 +231,10 @@ input[type=checkbox], input[type=radio] { width: 17px; height: 17px; cursor: poi
 .slot-pos { font-family: var(--score); font-weight: 500; font-size: 14px; letter-spacing: .1em; color: var(--accent); }
 .slot > span:nth-child(2), .slot a { font-size: 17px; font-weight: 700; color: var(--text); }
 .slot a:hover { color: var(--accent); }
+/* 랜덤 교체로 자리를 바꾼 라인 */
+.slot.swapped { background: linear-gradient(90deg, var(--accent-soft), transparent 70%); }
+.team.red .slot.swapped { background: linear-gradient(270deg, var(--accent-soft), transparent 70%); }
+.swap-mark { font-family: var(--score); font-size: 12px; font-weight: 700; color: var(--accent); margin-left: 6px; letter-spacing: .04em; }
 
 /* ---------- 요약 숫자: 스탯 보드 ---------- */
 .summary { display: flex; gap: 48px; flex-wrap: wrap; }

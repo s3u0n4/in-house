@@ -10,10 +10,14 @@
 <main class="container">
     <div class="page-head">
         <div>
-            <h1>팀 나누기 결과</h1>
+            <h1 th:text="${shuffled} ? '팀 나누기 결과 · 랜덤 교체' : '팀 나누기 결과'">팀 나누기 결과</h1>
             <p class="sub">
                 전력 차이 <strong th:text="${#numbers.formatDecimal(split.powerDiff(), 1, 1)}">0.4</strong>
                 · 티어 분포 차이 <strong th:text="${#numbers.formatDecimal(split.distributionDiff(), 1, 1)}">2.0</strong>
+                <th:block th:if="${shuffled}">
+                    · 맞바꾼 라인 <strong th:text="${#strings.setJoin(swappedPositions, ', ')}">TOP, MID</strong>
+                    <span>(가능한 조합 <span th:text="${shuffleOptionCount}">15</span>가지 중 하나)</span>
+                </th:block>
             </p>
         </div>
     </div>
@@ -29,10 +33,13 @@
                     <span th:text="${lineup.averageTierLabel()}">골드</span>
                     · 전력 <span th:text="${#numbers.formatDecimal(lineup.power(), 1, 1)}">21.5</span></span>
             </h3>
-            <div class="slot" th:each="a : ${lineup.assignments()}">
+            <!-- 랜덤 교체로 상대 팀과 자리를 바꾼 라인은 강조한다 -->
+            <div class="slot" th:each="a : ${lineup.assignments()}"
+                 th:classappend="${#sets.contains(swappedPositions, a.position())} ? 'swapped'">
                 <span class="slot-pos" th:text="${a.position()}">TOP</span>
                 <span><span th:text="${a.player().name()}">철수</span>
-                    <small class="tier-text" th:text="${a.player().tierLabel()}">골드</small></span>
+                    <small class="tier-text" th:text="${a.player().tierLabel()}">골드</small>
+                    <small class="swap-mark" th:if="${#sets.contains(swappedPositions, a.position())}">⇄ 교체</small></span>
                 <span class="badge" th:classappend="|fit-${a.fit()}|" th:text="${a.fitLabel()}">주</span>
             </div>
         </section>
@@ -42,10 +49,15 @@
         두 팀의 전력 합과 티어 분포(높은 순으로 1등끼리, 2등끼리 비교)가 비슷하도록 나누고, 비슷하면 포지션이 잘 맞는 쪽을 고릅니다.
         배지: <span class="badge fit-2">주</span> 주 포지션 · <span class="badge fit-1">부</span> 부 포지션
         · <span class="badge fit-0">-</span> 그 외</p>
+    <p class="muted"><strong>랜덤으로 2명씩 바꾸기</strong>: 같은 라인끼리 짝지은 두 사람(블루 TOP ↔ 레드 TOP …) 중 1~2쌍을 무작위로 골라 팀을 맞바꿉니다.
+        모두 자기 포지션은 그대로입니다. 균형이 크게 깨지지 않는 조합(불균형 점수가 원래보다 2 이하로 늘어나는 조합) 중에서만 고르고,
+        바꾼 뒤의 전력 차이와 티어 분포 차이는 위에서 다시 계산합니다.</p>
 
     <div class="actions">
         <a class="btn primary"
            th:href="@{/matches/new(blue=${split.blue().playerIds()}, red=${split.red().playerIds()})}">이 팀으로 경기 기록</a>
+        <a class="btn" th:href="@{/teams/result(playerIds=${playerIds}, shuffle=${nextShuffle})}">⇄ 랜덤으로 2명씩 바꾸기</a>
+        <a class="btn" th:if="${shuffled}" th:href="@{/teams/result(playerIds=${playerIds})}">균형 결과로 돌아가기</a>
         <a class="btn" th:href="@{/teams(playerIds=${playerIds})}">참가자 다시 고르기</a>
     </div>
 </main>

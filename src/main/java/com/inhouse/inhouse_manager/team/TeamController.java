@@ -2,7 +2,9 @@ package com.inhouse.inhouse_manager.team;
 
 import com.inhouse.inhouse_manager.player.Player;
 import com.inhouse.inhouse_manager.player.PlayerService;
+import com.inhouse.inhouse_manager.player.Position;
 import com.inhouse.inhouse_manager.stats.StatsService;
+import com.inhouse.inhouse_manager.team.TeamBalancer.TeamSplit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -10,6 +12,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Controller
 @RequiredArgsConstructor
@@ -25,16 +29,34 @@ public class TeamController {
         return "team-select";
     }
 
-    // 데이터를 바꾸지 않으니 GET으로 받는다. 새로고침해도 안전하다
+    /**
+     * 데이터를 바꾸지 않으니 GET으로 받는다. 새로고침해도 안전하다.
+     * shuffle: 있으면 균형 결과에서 같은 라인끼리 몇 쌍을 무작위로 맞바꾼다 (값은 무작위 seed)
+     */
     @GetMapping("/teams/result")
-    public String result(@RequestParam(required = false) List<Long> playerIds, Model model) {
+    public String result(@RequestParam(required = false) List<Long> playerIds,
+                         @RequestParam(required = false) Long shuffle,
+                         Model model) {
+        TeamSplit split;
         try {
-            model.addAttribute("split", teamService.split(playerIds));
+            split = teamService.split(playerIds);
         } catch (IllegalArgumentException e) {
             model.addAttribute("errorMessage", e.getMessage());
             addSelectOptions(model, playerIds);
             return "team-select";
         }
+
+        model.addAttribute("shuffleOptionCount", teamService.fairSwapOptions(split).size());
+        Set<Position> swappedPositions = Set.of();
+        if (shuffle != null) {
+            swappedPositions = teamService.pairsToSwap(split, shuffle);
+            split = teamService.swapPairs(split, swappedPositions);
+        }
+        model.addAttribute("split", split);
+        model.addAttribute("swappedPositions", swappedPositions);
+        model.addAttribute("shuffled", shuffle != null);
+        // "랜덤으로 섞기" 버튼에 넣을 다음 seed
+        model.addAttribute("nextShuffle", ThreadLocalRandom.current().nextInt(1, 1_000_000));
         model.addAttribute("playerIds", playerIds);
         return "team-result";
     }

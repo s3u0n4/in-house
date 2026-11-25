@@ -50,7 +50,7 @@ src/main/java/com/inhouse/inhouse_manager/
  └─ team/
      ├─ TeamBalancer.java        126가지 분할 × 120가지 포지션 배치 완전 탐색 (순수 자바). 불균형 = 전력 차이 + 0.5 × 티어 분포 차이
      ├─ TeamService.java         id 10개 → 후보 만들기(언랭/미입력 티어는 참가자 평균) → TeamBalancer
-     └─ TeamController.java      /teams, /teams/result (GET)
+     └─ TeamController.java      /teams, /teams/result (GET, shuffle=seed면 라인끼리 1~2쌍 랜덤 교체)
 src/main/resources/templates/
  ├─ fragments/layout.html, error.html, error/404.html
  ├─ players.html, player-form.html(등록·수정 같이 씀), player-detail.html
@@ -91,6 +91,7 @@ src/test/java/com/inhouse/inhouse_manager/
 > - 2026-11-25: 사용자가 "롤 테마로 보인다"고 했다. 서버는 중계 CSS를 보내고 있었고, 브라우저가 같은 주소(`/css/style.css`)의 예전 롤 CSS를 캐시에서 쓰고 있었다. `application.properties`에 정적 파일 내용 해시 설정(`spring.web.resources.chain.strategy.content.*`)을 추가해서, 이제 CSS 주소가 `/css/style-<해시>.css`로 바뀐다(Thymeleaf `@{}` 링크에 자동 적용).
 > - 2026-11-25: 티어 기능 추가 (사용자 요청: "티어 입력도 받아서 팀마다 티어 분포 비슷하게"). `Tier` enum, Player.tier(DB null 허용, 폼에서는 필수). 팀 나누기는 전력 점수(티어 + 내전 승률 보정 ±2)와 티어 분포를 함께 본다. 테스트 31개. 사용자 DB의 기존 플레이어 10명은 티어가 비어 있으니 수정 화면에서 입력해야 한다(비어 있어도 팀 나누기는 참가자 평균으로 동작).
 > - 2026-11-25: 사용자 요청으로 실제 DB에 임의 티어의 테스트 플레이어 10명(라이엇 ID `#RAND`, id 12~21)을 추가하고 팀 나누기를 시험했다. 전력 차이 0.0, 티어 분포 차이 6.0(이 10명으로 가능한 최솟값), 10명 모두 주 포지션.
+> - 2026-11-25: "짜인 팀에서 2명씩 매칭해서 랜덤으로 팀 바꾸기" 추가. 같은 라인끼리 짝지어 1~2쌍을 맞바꾸고, 불균형이 +2 넘게 늘어나는 조합은 제외(후보가 3개 미만이면 불균형이 작은 3개). 처음엔 아무 쌍이나 바꿔서 전력 차이가 11까지 벌어졌고, `java.util.Random`은 seed가 비슷하면 같은 값이 나와서 `SplittableRandom`으로 바꿨다. 테스트 35개.
 > **현재 위치 (2026-11-25):** 요구사항명세서의 필수 기능과 권장 기능을 모두 구현했다. 사용자가 8081 서버를 재시작했고, 모든 화면이 정상 응답하는 것을 확인했다(경기 테이블 자동 생성, 404 화면 포함). 사용자의 요청으로 테스트용 플레이어 8명(`테스트탑1`~`테스트서폿2`, 라이엇 ID는 `#TEST`로 끝남)을 사용자 DB에 등록했다. 총 10명이다. 사용자가 팀 나누기 → 경기 기록으로 첫 경기(match id 1, 2026-11-25, 블루 승)를 기록했고, 목록, 상세, 전적이 모두 맞게 반영된 것을 확인했다. 이제 테스트 플레이어를 지우려면 경기부터 삭제해야 한다.
 
 후보 (요구사항명세서 1.3 "제외" 항목):

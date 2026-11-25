@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Import;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -90,5 +91,47 @@ class TeamServiceTest {
         assertThat(unrankedCandidate.tierLabel()).isEqualTo("언랭");
         assertThat(noTierCandidate.tierScore()).isEqualTo(4.0);
         assertThat(noTierCandidate.tierLabel()).isEqualTo("미입력");
+    }
+
+    @Test
+    void 랜덤_교체는_seed가_같으면_같고_항상_1쌍이나_2쌍을_바꾼다() {
+        TeamSplit split = teamService.split(ids);
+
+        assertThat(teamService.pairsToSwap(split, 42L)).isEqualTo(teamService.pairsToSwap(split, 42L));
+        for (long seed = 1; seed <= 200; seed++) {
+            assertThat(teamService.pairsToSwap(split, seed).size()).isBetween(1, 2);
+        }
+    }
+
+    @Test
+    void 랜덤_교체는_균형이_크게_깨지는_조합을_고르지_않는다() {
+        // 라인마다 티어 차이가 큰 상대를 붙여 둔다: 블루 쪽은 챌린저/아이언이 섞이고 레드 쪽은 골드
+        List<Long> spread = new ArrayList<>();
+        Tier[] tiers = {Tier.CHALLENGER, Tier.IRON, Tier.CHALLENGER, Tier.IRON, Tier.GOLD,
+                Tier.GOLD, Tier.GOLD, Tier.GOLD, Tier.GOLD, Tier.GOLD};
+        Position[] mains = {Position.TOP, Position.JUNGLE, Position.MID, Position.ADC, Position.SUPPORT,
+                Position.TOP, Position.JUNGLE, Position.MID, Position.ADC, Position.SUPPORT};
+        for (int i = 0; i < tiers.length; i++) {
+            spread.add(playerRepository.save(new Player("p" + i, "spread#" + i, mains[i], null, tiers[i])).getId());
+        }
+        TeamSplit split = teamService.split(spread);
+
+        for (Set<Position> option : teamService.fairSwapOptions(split)) {
+            TeamSplit swapped = teamService.swapPairs(split, option);
+            assertThat(swapped.cost()).isLessThanOrEqualTo(split.cost() + TeamService.SHUFFLE_TOLERANCE + 1e-9);
+        }
+    }
+
+    @Test
+    void 랜덤_교체를_해도_10명이_모두_자기_포지션에_남는다() {
+        TeamSplit split = teamService.split(ids);
+
+        TeamSplit shuffled = teamService.swapPairs(split, teamService.pairsToSwap(split, 7L));
+
+        List<Long> before = Stream.concat(split.blue().playerIds().stream(), split.red().playerIds().stream()).sorted().toList();
+        List<Long> after = Stream.concat(shuffled.blue().playerIds().stream(), shuffled.red().playerIds().stream()).sorted().toList();
+        assertThat(after).isEqualTo(before);
+        assertThat(shuffled.blue().fit() + shuffled.red().fit()).isEqualTo(split.blue().fit() + split.red().fit());
+        assertThat(shuffled.blue().playerIds()).isNotEqualTo(split.blue().playerIds());
     }
 }

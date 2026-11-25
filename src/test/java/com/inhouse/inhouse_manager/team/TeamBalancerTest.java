@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -102,5 +103,23 @@ class TeamBalancerTest {
         List<Candidate> nine = new ArrayList<>(sameCandidates().subList(0, 9));
 
         assertThatThrownBy(() -> teamBalancer.split(nine)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void 고른_라인의_두_사람만_팀을_맞바꾸고_포지션은_그대로다() {
+        TeamSplit split = teamBalancer.split(sameCandidates());
+
+        TeamSplit swapped = teamBalancer.swapPairs(split, Set.of(Position.TOP, Position.MID));
+
+        for (int i = 0; i < 5; i++) {
+            Assignment blueBefore = split.blue().assignments().get(i);
+            Assignment redBefore = split.red().assignments().get(i);
+            Assignment blueAfter = swapped.blue().assignments().get(i);
+            Assignment redAfter = swapped.red().assignments().get(i);
+            assertThat(blueAfter.position()).isEqualTo(blueBefore.position());
+            boolean chosen = blueBefore.position() == Position.TOP || blueBefore.position() == Position.MID;
+            assertThat(blueAfter.player()).isEqualTo(chosen ? redBefore.player() : blueBefore.player());
+            assertThat(redAfter.player()).isEqualTo(chosen ? blueBefore.player() : redBefore.player());
+        }
     }
 }
