@@ -25,7 +25,9 @@
         <div class="table-wrap">
             <table>
                 <thead>
-                <tr><th></th><th>이름</th><th>주 포지션</th><th>부 포지션</th><th class="num">경기</th><th class="num">승률</th></tr>
+                <tr>
+                    <th><label class="select-all"><input type="checkbox" id="select-all"> 전체</label></th>
+                    <th>이름</th><th>주 포지션</th><th>부 포지션</th><th class="num">경기</th><th class="num">승률</th></tr>
                 </thead>
                 <tbody>
                 <tr th:each="player : ${players}" th:with="s=${stats[player.id]}">
@@ -50,13 +52,28 @@
 </main>
 
 <script>
-    // 체크할 때마다 "선택 n / 10" 숫자를 바꾼다. 꺼져 있어도 서버에서 10명인지 다시 검사한다
-    document.querySelectorAll('input[name=playerIds]').forEach(function (box) {
-        box.addEventListener('change', function () {
-            document.getElementById('selected-count').textContent =
-                document.querySelectorAll('input[name=playerIds]:checked').length;
+    // 체크할 때마다 "선택 n / 10" 숫자와 "전체" 체크 상태를 바꾼다. 꺼져 있어도 서버에서 10명인지 다시 검사한다
+    var boxes = document.querySelectorAll('input[name=playerIds]');
+    var selectAll = document.getElementById('select-all');
+
+    function refresh() {
+        var checked = document.querySelectorAll('input[name=playerIds]:checked').length;
+        document.getElementById('selected-count').textContent = checked;
+        selectAll.checked = boxes.length > 0 && checked === boxes.length;
+        // 일부만 골랐을 때는 "전체" 칸에 가로줄(-)을 표시한다
+        selectAll.indeterminate = checked > 0 && checked < boxes.length;
+    }
+
+    selectAll.addEventListener('change', function () {
+        boxes.forEach(function (box) {
+            box.checked = selectAll.checked;
         });
+        refresh();
     });
+    boxes.forEach(function (box) {
+        box.addEventListener('change', refresh);
+    });
+    refresh();
 </script>
 </body>
 </html>

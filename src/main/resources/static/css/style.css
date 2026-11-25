@@ -115,6 +115,8 @@ input:focus, select:focus { outline: 2px solid color-mix(in srgb, var(--accent) 
 .slot + .slot { border-top: 1px dashed var(--border); }
 .slot-pos { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .02em; }
 
+.select-all { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+
 /* ---------- 요약 숫자 ---------- */
 .summary { display: flex; gap: 28px; flex-wrap: wrap; }
 .summary .value { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
