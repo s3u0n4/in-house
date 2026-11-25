@@ -94,12 +94,12 @@ class TeamServiceTest {
     }
 
     @Test
-    void 랜덤_교체는_seed가_같으면_같고_항상_1쌍이나_2쌍을_바꾼다() {
+    void 랜덤_교체는_seed가_같으면_같고_항상_1쌍에서_4쌍을_바꾼다() {
         TeamSplit split = teamService.split(ids);
 
         assertThat(teamService.pairsToSwap(split, 42L)).isEqualTo(teamService.pairsToSwap(split, 42L));
         for (long seed = 1; seed <= 200; seed++) {
-            assertThat(teamService.pairsToSwap(split, seed).size()).isBetween(1, 2);
+            assertThat(teamService.pairsToSwap(split, seed).size()).isBetween(1, 4);
         }
     }
 

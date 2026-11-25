@@ -29,8 +29,6 @@ public class TeamService {
     private static final double DEFAULT_TIER_SCORE = Tier.GOLD.getScore();
     /** 랜덤 교체 때 허용하는 불균형 증가량 (대략 티어 2단계) */
     static final double SHUFFLE_TOLERANCE = 2.0;
-    /** 한 번에 맞바꾸는 최대 쌍 수 */
-    private static final int MAX_SWAP_PAIRS = 2;
     /** 허용 범위 안의 조합이 이보다 적으면 불균형이 작은 순으로 이만큼은 후보로 쓴다 */
     private static final int MIN_SHUFFLE_OPTIONS = 3;
 
@@ -76,17 +74,14 @@ public class TeamService {
 
     /**
      * 랜덤 교체 후보: 같은 라인끼리 짝지은 두 사람을 맞바꾸는 조합 중 균형이 크게 깨지지 않는 것들.
-     * 1~2쌍만 본다 (15가지). 0쌍은 그대로이고, 3~4쌍을 바꾸는 건 나머지 2~1쌍을 바꾸고 블루/레드 이름만 뒤집은 것과
-     * 같은 팀 구성이라 중복이다.
+     * 5개 라인 모두 바꿀지 말지를 정하는 조합 중, 하나도 안 바꾸는 것과 다섯 쌍을 다 바꾸는 것(블루/레드 이름만 뒤집힌
+     * 같은 팀)을 뺀 30가지를 본다.
      * 불균형 점수가 원래 + SHUFFLE_TOLERANCE 이내인 조합만 남기고, 그런 조합이 너무 적으면 불균형이 작은 순으로 몇 개를 쓴다.
      */
     public List<Set<Position>> fairSwapOptions(TeamSplit split) {
         Position[] positions = Position.values();
         List<Set<Position>> all = new ArrayList<>();
-        for (int mask = 1; mask < (1 << positions.length); mask++) {
-            if (Integer.bitCount(mask) > MAX_SWAP_PAIRS) {
-                continue;
-            }
+        for (int mask = 1; mask < (1 << positions.length) - 1; mask++) {
             Set<Position> swap = EnumSet.noneOf(Position.class);
             for (int i = 0; i < positions.length; i++) {
                 if ((mask & (1 << i)) != 0) {
