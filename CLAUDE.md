@@ -20,6 +20,7 @@ League of Legends 내전(커스텀 게임) 참가자, 팀 나누기, 경기 결�
 - Spring Boot 4라서 예전 자료와 import 경로가 다른 것이 있다. 예: `@DataJpaTest` → `org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest`
 - 화면: Thymeleaf (2026-11-20 결정). 공통 레이아웃은 `templates/fragments/layout.html`(head, header 조각), CSS는 `static/css/style.css` 하나.
 - 디자인: 롤 클라이언트 느낌의 어두운 테마 (2026-11-25, 사용자 요청). 남색 바탕, 금색 테두리, 헥스텍 청록 포인트, 영문 장식 글꼴 Cinzel. 색은 `style.css`의 `:root` 변수로 관리한다. 라이엇 로고와 이미지는 쓰지 않는다. 자세한 규칙은 화면설계서 3장에 있다.
+- 테마 전환: 헤더의 `LoL | OP.GG` 버튼(쿠키 `theme`). OP.GG 테마는 `static/css/opgg.css`(밝은 회색, 파란 헤더, 승리/패배 줄 색). 두 CSS가 같은 클래스 이름을 쓰니 템플릿을 고치면 두 테마를 모두 확인한다.
 
 ## 패키지 구조
 기능(도메인)별 패키지. 루트 패키지는 `com.inhouse.inhouse_manager`.
@@ -27,7 +28,10 @@ League of Legends 내전(커스텀 게임) 참가자, 팀 나누기, 경기 결�
 src/main/java/com/inhouse/inhouse_manager/
  ├─ InhouseManagerApplication.java
  ├─ HomeController.java          GET / → redirect:/players
- ├─ common/NotFoundException.java  @ResponseStatus(404). 없는 id 조회 시 → templates/error/404.html
+ ├─ common/
+ │   ├─ NotFoundException.java   @ResponseStatus(404). 없는 id 조회 시 → templates/error/404.html
+ │   ├─ ThemeController.java     GET /theme/{name} → 쿠키 저장 후 Referer 경로로 redirect
+ │   └─ ThemeAdvice.java         @ControllerAdvice로 모든 화면에 theme 값 전달
  ├─ player/
  │   ├─ Player.java, Position.java, PlayerRepository.java
  │   ├─ PlayerService.java       등록/수정/삭제(경기 기록 있으면 불가)/조회
@@ -83,6 +87,7 @@ src/test/java/com/inhouse/inhouse_manager/
 ## 다음 할 일
 > - 2026-11-25: 팀 나누기 화면에 "전체" 선택 체크박스를 추가했다 (사용자 요청, JS만 사용, 일부만 골랐을 때는 가로줄 상태로 표시).
 > - 2026-11-25: 전체 디자인을 롤 테마로 바꿨다 (`style.css` 전면 교체, 헤더 로고, 승/패 배지를 "승리/패배"로 변경, 인라인 style 제거). 시험 서버에서 화면을 데스크톱과 375px 폭으로 찍어 확인했다.
+> - 2026-11-25: 사용자가 "op.gg 디자인도 보여줘"라고 해서 OP.GG 느낌의 테마를 추가하고 헤더에 전환 버튼을 달았다. 기본값은 LoL 테마다. 최근 경기 줄에 `row-win`/`row-lose` 클래스를 붙였다.
 > **현재 위치 (2026-11-25):** 요구사항명세서의 필수 기능과 권장 기능을 모두 구현했다. 사용자가 8081 서버를 재시작했고, 모든 화면이 정상 응답하는 것을 확인했다(경기 테이블 자동 생성, 404 화면 포함). 사용자의 요청으로 테스트용 플레이어 8명(`테스트탑1`~`테스트서폿2`, 라이엇 ID는 `#TEST`로 끝남)을 사용자 DB에 등록했다. 총 10명이다. 사용자가 팀 나누기 → 경기 기록으로 첫 경기(match id 1, 2026-11-25, 블루 승)를 기록했고, 목록, 상세, 전적이 모두 맞게 반영된 것을 확인했다. 이제 테스트 플레이어를 지우려면 경기부터 삭제해야 한다.
 
 후보 (요구사항명세서 1.3 "제외" 항목):

@@ -87,7 +87,7 @@ a:hover { color: var(--gold-bright); }
 .brand-en { font-family: var(--display); font-weight: 700; letter-spacing: .18em; color: var(--gold); font-size: 15px; }
 .brand-ko { font-size: 11px; color: var(--muted); letter-spacing: .08em; }
 
-.nav { display: flex; gap: 2px; }
+.nav { display: flex; gap: 2px; margin-left: auto; }
 .nav a {
     position: relative; padding: 20px 14px; color: var(--muted);
     font-weight: 600; font-size: 14px; letter-spacing: .04em;
@@ -98,6 +98,12 @@ a:hover { color: var(--gold-bright); }
     content: ""; position: absolute; left: 10px; right: 10px; bottom: 0; height: 2px;
     background: linear-gradient(90deg, transparent, var(--gold), transparent);
 }
+
+/* 테마 전환 (LoL / OP.GG) */
+.theme-switch { display: flex; border: 1px solid var(--gold-line); border-radius: var(--radius); overflow: hidden; }
+.theme-switch a { padding: 4px 10px; font-size: 12px; font-weight: 700; letter-spacing: .06em; color: var(--muted); }
+.theme-switch a:hover { color: var(--gold-bright); }
+.theme-switch a.active { background: rgba(200, 170, 110, .16); color: var(--gold); }
 
 /* ---------- 본문 ---------- */
 main.container { padding-top: 32px; padding-bottom: 64px; }
@@ -191,6 +197,8 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 td.wrap { white-space: normal; color: var(--text-2); }
 td.empty { text-align: center; color: var(--muted); padding: 36px 12px; }
 td.empty:hover, tr:has(td.empty):hover { background: transparent; }
+tr.row-win td:first-child { box-shadow: inset 3px 0 0 var(--blue); }
+tr.row-lose td:first-child { box-shadow: inset 3px 0 0 var(--red); }
 
 /* ---------- 배지, 팀 색 ---------- */
 .badge {
@@ -271,7 +279,9 @@ input[type=checkbox], input[type=radio] { width: 16px; height: 16px; cursor: poi
     .teams { gap: 16px; }
     .teams::after { display: none; }
     main.container { padding-top: 20px; }
-    .nav a { padding: 12px 10px; }
-    .header-inner { padding-top: 8px; }
+    .header-inner { padding-top: 10px; gap: 8px 16px; }
+    .nav { order: 3; width: 100%; margin-left: 0; }
+    .nav a { padding: 10px 10px 12px; }
+    .theme-switch { margin-left: auto; }
     .summary { gap: 24px; }
 }

@@ -62,7 +62,7 @@
             <tr><th>날짜</th><th>팀</th><th>포지션</th><th>결과</th></tr>
             </thead>
             <tbody>
-            <tr class="clickable" th:each="p : ${record.recentMatches()}">
+            <tr class="clickable" th:each="p : ${record.recentMatches()}" th:classappend="${p.win} ? 'row-win' : 'row-lose'">
                 <td><a th:href="@{/matches/{id}(id=${p.match.id})}" th:text="${p.match.playedAt}">2026-11-24</a></td>
                 <td th:text="${p.team.label}" th:class="${p.team.name() == 'BLUE'} ? 'team-blue' : 'team-red'">블루</td>
                 <td th:text="${p.position}">ADC</td>
