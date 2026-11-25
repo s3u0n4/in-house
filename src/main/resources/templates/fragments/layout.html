@@ -6,6 +6,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${title} + ' · 내전 매니저'">내전 매니저</title>
+    <!-- 영문 제목용 글꼴 (인터넷이 안 되면 기본 serif 글꼴로 보인다) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap">
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 
@@ -15,7 +19,10 @@
 <th:block th:fragment="header(menu)">
     <header class="site-header">
         <div class="container header-inner">
-            <a class="brand" th:href="@{/}"><span class="brand-mark">◆</span> 내전 매니저</a>
+            <a class="brand" th:href="@{/}">
+                <span class="brand-mark" aria-hidden="true"></span>
+                <span class="brand-text"><span class="brand-en">INHOUSE</span><span class="brand-ko">내전 매니저</span></span>
+            </a>
             <nav class="nav">
                 <a th:href="@{/players}" th:classappend="${menu == 'players'} ? 'active'">플레이어</a>
                 <a th:href="@{/matches}" th:classappend="${menu == 'matches'} ? 'active'">경기 기록</a>

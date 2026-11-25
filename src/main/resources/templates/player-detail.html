@@ -11,7 +11,7 @@
     <div class="page-head">
         <div>
             <h1><span th:text="${player.name}">이선용</span>
-                <span class="muted" style="font-weight: 400" th:text="${player.riotId}">성아는못말려#2993</span></h1>
+                <span class="riot-id" th:text="${player.riotId}">성아는못말려#2993</span></h1>
             <p class="sub">
                 주 포지션 <strong th:text="${player.mainPosition}">ADC</strong>
                 · 부 포지션 <strong th:text="${player.subPosition} ?: '-'">SUPPORT</strong>
@@ -66,7 +66,7 @@
                 <td><a th:href="@{/matches/{id}(id=${p.match.id})}" th:text="${p.match.playedAt}">2026-11-24</a></td>
                 <td th:text="${p.team.label}" th:class="${p.team.name() == 'BLUE'} ? 'team-blue' : 'team-red'">블루</td>
                 <td th:text="${p.position}">ADC</td>
-                <td><span class="badge" th:classappend="${p.win} ? 'win' : 'lose'" th:text="${p.win} ? '승' : '패'">승</span></td>
+                <td><span class="badge" th:classappend="${p.win} ? 'win' : 'lose'" th:text="${p.win} ? '승리' : '패배'">승리</span></td>
             </tr>
             <tr th:if="${#lists.isEmpty(record.recentMatches())}">
                 <td class="empty" colspan="4">아직 경기 기록이 없습니다.</td>

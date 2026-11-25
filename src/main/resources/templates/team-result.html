@@ -26,7 +26,7 @@
             <h3 class="team-title">
                 <span th:text="${side == 'BLUE'} ? '블루팀' : '레드팀'"
                       th:class="${side == 'BLUE'} ? 'team-blue' : 'team-red'">블루팀</span>
-                <span class="muted" style="font-size: 13px">점수
+                <span class="team-score">점수
                     <span th:text="${#numbers.formatDecimal(lineup.score(), 1, 2)}">2.61</span></span>
             </h3>
             <div class="slot" th:each="a : ${lineup.assignments()}">

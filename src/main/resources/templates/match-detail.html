@@ -24,7 +24,7 @@
             <h3 class="team-title">
                 <span th:text="${side == 'BLUE'} ? '블루팀' : '레드팀'"
                       th:class="${side == 'BLUE'} ? 'team-blue' : 'team-red'">블루팀</span>
-                <span class="badge" th:classappend="${won} ? 'win' : 'lose'" th:text="${won} ? '승' : '패'">승</span>
+                <span class="badge" th:classappend="${won} ? 'win' : 'lose'" th:text="${won} ? '승리' : '패배'">승리</span>
             </h3>
             <div class="slot" th:each="p : ${members}">
                 <span class="slot-pos" th:text="${p.position}">TOP</span>
