@@ -8,6 +8,9 @@ import java.util.List;
 public interface MatchParticipantRepository extends JpaRepository<MatchParticipant, Long> {
     boolean existsByPlayerId(Long playerId);
 
+    @Query("select distinct mp.player.id from MatchParticipant mp")
+    List<Long> findPlayerIdsWithMatches();
+
     @Query("select mp from MatchParticipant mp join fetch mp.match")
     List<MatchParticipant> findAllWithMatch();
 

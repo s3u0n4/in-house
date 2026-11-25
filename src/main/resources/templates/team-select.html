@@ -13,67 +13,216 @@
         <div class="page-head">
             <div>
                 <h1>팀 나누기</h1>
-                <p class="sub">참가할 <span th:text="${requiredCount}">10</span>명을 고르세요.</p>
+                <p class="sub">플레이어 카드를 참가자 칸으로 끌어다 놓거나 눌러서 <span th:text="${requiredCount}">10</span>명을 채우세요.</p>
             </div>
             <div class="actions">
-                <span class="muted">선택 <strong id="selected-count" th:text="${#lists.size(selectedIds)}">0</strong>
-                    / <span th:text="${requiredCount}">10</span></span>
                 <button class="btn primary" type="submit">팀 나누기</button>
             </div>
         </div>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                <tr>
-                    <th><label class="select-all"><input type="checkbox" id="select-all"> 전체</label></th>
-                    <th>이름</th><th>티어</th><th>주 포지션</th><th>부 포지션</th><th class="num">경기</th><th class="num">승률</th></tr>
-                </thead>
-                <tbody>
-                <tr th:each="player : ${players}" th:with="s=${stats[player.id]}">
-                    <td>
-                        <input type="checkbox" name="playerIds" th:value="${player.id}"
-                               th:id="|player-${player.id}|"
+        <div class="picker">
+            <!-- 플레이어 카드 목록. 카드 안의 체크박스가 실제로 서버에 보내는 값이다 (체크 = 참가) -->
+            <section class="picker-panel">
+                <div class="panel-head">
+                    <h2>플레이어</h2>
+                    <button class="btn small" type="button" id="add-all">전체 추가</button>
+                </div>
+                <div class="card-zone" id="pool">
+                    <label class="player-card"
+                           th:each="player, stat : ${players}" th:with="s=${stats[player.id]}"
+                           th:attr="data-id=${player.id}, data-order=${stat.index}">
+                        <input type="checkbox" class="visually-hidden" name="playerIds" th:value="${player.id}"
                                th:checked="${#lists.contains(selectedIds, player.id)}">
-                    </td>
-                    <td><label th:for="|player-${player.id}|" th:text="${player.name}">홍길동</label></td>
-                    <td><span class="tier" th:classappend="|tier-${player.tier}|" th:text="${player.tier?.label} ?: '-'">골드</span></td>
-                    <td th:text="${player.mainPosition}">MID</td>
-                    <td th:text="${player.subPosition} ?: '-'">-</td>
-                    <td class="num" th:text="${s.games()}">0</td>
-                    <td class="num" th:text="${s.winRateText()}">-</td>
-                </tr>
-                <tr th:if="${#lists.isEmpty(players)}">
-                    <td class="empty" colspan="7">등록된 플레이어가 없습니다. <a th:href="@{/players/new}">플레이어 등록하기</a></td>
-                </tr>
-                </tbody>
-            </table>
+                        <span class="card-top">
+                            <span class="card-name" th:text="${player.name}">홍길동</span>
+                            <span class="tier" th:classappend="|tier-${player.tier}|" th:text="${player.tier?.label} ?: '-'">골드</span>
+                        </span>
+                        <span class="card-meta">
+                            <span th:text="${player.mainPosition}">MID</span>
+                            <span th:text="${player.subPosition != null} ? |/ ${player.subPosition}| : ''">/ TOP</span>
+                            <span class="card-rate" th:text="|${s.games()}경기 ${s.winRateText()}|">0경기 -</span>
+                        </span>
+                    </label>
+                    <p class="zone-empty" th:if="${#lists.isEmpty(players)}">등록된 플레이어가 없습니다. <a th:href="@{/players/new}">플레이어 등록하기</a></p>
+                </div>
+            </section>
+
+            <!-- 참가자 칸. 자바스크립트가 체크된 카드를 이쪽으로 옮기고 남은 자리를 빈 칸으로 보여준다 -->
+            <section class="picker-panel roster-panel">
+                <div class="panel-head">
+                    <h2>참가자 <span class="roster-count"><strong id="selected-count" th:text="${#lists.size(selectedIds)}">0</strong>
+                        / <span th:text="${requiredCount}">10</span></span></h2>
+                    <button class="btn small" type="button" id="clear-all">모두 빼기</button>
+                </div>
+                <div class="card-zone roster" id="roster"></div>
+                <p class="roster-hint" id="roster-hint">여기로 끌어다 놓으세요</p>
+            </section>
         </div>
     </form>
 </main>
 
-<script>
-    // 체크할 때마다 "선택 n / 10" 숫자와 "전체" 체크 상태를 바꾼다. 꺼져 있어도 서버에서 10명인지 다시 검사한다
-    var boxes = document.querySelectorAll('input[name=playerIds]');
-    var selectAll = document.getElementById('select-all');
+<script th:inline="javascript">
+    // 체크박스가 진짜 값이고, 카드 위치(왼쪽 목록 / 오른쪽 참가자)는 체크 상태를 보여주는 것뿐이다.
+    // 자바스크립트가 꺼져 있어도 카드를 눌러 체크할 수 있고, 서버에서 10명인지 다시 검사한다.
+    var REQUIRED = /*[[${requiredCount}]]*/ 10;
+    var pool = document.getElementById('pool');
+    var roster = document.getElementById('roster');
+    var cards = Array.prototype.slice.call(document.querySelectorAll('.player-card'));
 
-    function refresh() {
-        var checked = document.querySelectorAll('input[name=playerIds]:checked').length;
-        document.getElementById('selected-count').textContent = checked;
-        selectAll.checked = boxes.length > 0 && checked === boxes.length;
-        // 일부만 골랐을 때는 "전체" 칸에 가로줄(-)을 표시한다
-        selectAll.indeterminate = checked > 0 && checked < boxes.length;
+    function boxOf(card) {
+        return card.querySelector('input[name=playerIds]');
     }
 
-    selectAll.addEventListener('change', function () {
-        boxes.forEach(function (box) {
-            box.checked = selectAll.checked;
+    // 체크 상태에 맞는 곳으로 카드를 옮긴다. 왼쪽 목록으로 돌아갈 때는 원래 순서 자리로 넣는다
+    function place(card) {
+        if (boxOf(card).checked) {
+            if (card.parentNode !== roster) {
+                roster.insertBefore(card, roster.querySelector('.slot-empty'));
+            }
+            return;
+        }
+        var order = Number(card.dataset.order);
+        var next = cards.find(function (other) {
+            return other.parentNode === pool && Number(other.dataset.order) > order;
         });
+        pool.insertBefore(card, next || null);
+    }
+
+    function refresh() {
+        var count = roster.querySelectorAll('.player-card').length;
+        document.getElementById('selected-count').textContent = count;
+        var counter = document.querySelector('.roster-count');
+        counter.classList.toggle('ok', count === REQUIRED);
+        counter.classList.toggle('over', count > REQUIRED);
+
+        // 남은 자리만큼 빈 칸을 보여준다
+        roster.querySelectorAll('.slot-empty').forEach(function (slot) { slot.remove(); });
+        for (var i = count; i < REQUIRED; i++) {
+            var slot = document.createElement('div');
+            slot.className = 'slot-empty';
+            slot.textContent = (i + 1) + '번째 자리';
+            roster.appendChild(slot);
+        }
+        var hint = document.getElementById('roster-hint');
+        hint.textContent = count > REQUIRED ? (count - REQUIRED) + '명이 많아요. 빼 주세요.'
+            : count === REQUIRED ? '10명이 모였어요. 팀 나누기를 누르세요.'
+            : '카드를 여기로 끌어다 놓거나 눌러서 추가하세요.';
+    }
+
+    function setChecked(card, checked) {
+        boxOf(card).checked = checked;
+        place(card);
+        refresh();
+    }
+
+    cards.forEach(function (card) {
+        boxOf(card).addEventListener('change', function () {
+            place(card);
+            refresh();
+        });
+    });
+
+    // ---- 마우스로 끌어다 놓기 ----
+    // 브라우저 기본 드래그(draggable) 대신 마우스 움직임(Pointer 이벤트)을 직접 따라간다.
+    // 휴대폰 터치는 화면 스크롤과 겹치므로 드래그하지 않고, 카드를 탭해서 넣고 뺀다.
+    var drag = null;          // 지금 끌고 있는 카드 정보
+    var suppressClick = false; // 끌어다 놓은 직후의 클릭은 무시한다 (안 그러면 체크가 한 번 더 바뀐다)
+
+    function zoneAt(x, y) {
+        var element = document.elementFromPoint(x, y);
+        var panel = element && element.closest('.picker-panel');
+        if (!panel) {
+            return null;
+        }
+        return panel.classList.contains('roster-panel') ? roster : pool;
+    }
+
+    function highlight(zone) {
+        [pool, roster].forEach(function (z) { z.classList.toggle('drag-over', z === zone); });
+    }
+
+    function endDrag() {
+        if (drag && drag.ghost) {
+            drag.ghost.remove();
+            drag.card.classList.remove('dragging');
+        }
+        highlight(null);
+        drag = null;
+    }
+
+    cards.forEach(function (card) {
+        card.addEventListener('dragstart', function (event) { event.preventDefault(); });
+        card.addEventListener('pointerdown', function (event) {
+            if (event.pointerType === 'touch' || event.button !== 0) {
+                return;
+            }
+            var rect = card.getBoundingClientRect();
+            drag = { card: card, startX: event.clientX, startY: event.clientY,
+                     offsetX: event.clientX - rect.left, offsetY: event.clientY - rect.top, ghost: null };
+        });
+        card.addEventListener('click', function (event) {
+            if (suppressClick) {
+                event.preventDefault();
+                suppressClick = false;
+            }
+        });
+    });
+
+    document.addEventListener('pointermove', function (event) {
+        if (!drag) {
+            return;
+        }
+        if (!drag.ghost) {
+            // 6px 이상 움직여야 드래그로 본다. 그보다 적으면 그냥 클릭이다
+            if (Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) < 6) {
+                return;
+            }
+            drag.ghost = drag.card.cloneNode(true);
+            drag.ghost.classList.add('drag-ghost');
+            drag.ghost.style.width = drag.card.getBoundingClientRect().width + 'px';
+            drag.ghost.querySelector('input').removeAttribute('name');
+            document.body.appendChild(drag.ghost);
+            drag.card.classList.add('dragging');
+        }
+        drag.ghost.style.transform = 'translate(' + (event.clientX - drag.offsetX) + 'px, ' + (event.clientY - drag.offsetY) + 'px)';
+        highlight(zoneAt(event.clientX, event.clientY));
+    });
+
+    document.addEventListener('pointerup', function (event) {
+        if (!drag) {
+            return;
+        }
+        if (drag.ghost) {
+            var zone = zoneAt(event.clientX, event.clientY);
+            var card = drag.card;
+            endDrag();
+            if (zone) {
+                setChecked(card, zone === roster);
+            }
+            suppressClick = true;
+            setTimeout(function () { suppressClick = false; }, 0);
+            return;
+        }
+        drag = null;
+    });
+    document.addEventListener('pointercancel', endDrag);
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            endDrag();
+        }
+    });
+
+    document.getElementById('add-all').addEventListener('click', function () {
+        cards.forEach(function (card) { boxOf(card).checked = true; place(card); });
         refresh();
     });
-    boxes.forEach(function (box) {
-        box.addEventListener('change', refresh);
+    document.getElementById('clear-all').addEventListener('click', function () {
+        cards.forEach(function (card) { boxOf(card).checked = false; place(card); });
+        refresh();
     });
+
+    refresh();
+    cards.forEach(place);
     refresh();
 </script>
 </body>

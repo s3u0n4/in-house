@@ -43,6 +43,22 @@ public class PlayerService {
      */
     @Transactional
     public void updateAll(List<PlayerUpdate> updates) {
+        saveAll(updates, List.of());
+    }
+
+    /**
+     * 목록 수정 저장: deleteIds를 삭제하고 updates를 수정한다. 하나의 트랜잭션이라 하나라도 실패하면 아무것도 바뀌지 않는다.
+     */
+    @Transactional
+    public void saveAll(List<PlayerUpdate> updates, List<Long> deleteIds) {
+        List<String> blocked = deleteIds.stream()
+                .filter(matchParticipantRepository::existsByPlayerId)
+                .map(id -> findById(id).getName())
+                .toList();
+        if (!blocked.isEmpty()) {
+            throw new IllegalStateException("경기 기록이 있는 플레이어는 삭제할 수 없습니다: " + String.join(", ", blocked));
+        }
+
         Set<String> riotIds = new HashSet<>();
         for (PlayerUpdate update : updates) {
             String trimmedRiotId = update.riotId().strip();
@@ -50,9 +66,19 @@ public class PlayerService {
                 throw new IllegalArgumentException("같은 라이엇 ID가 두 줄에 있습니다: " + trimmedRiotId);
             }
         }
+        for (Long id : deleteIds) {
+            playerRepository.delete(findById(id));
+        }
+        // 삭제를 먼저 DB에 반영해 둔다. 그래야 지운 사람의 라이엇 ID를 다른 줄이 바로 쓸 수 있다
+        playerRepository.flush();
         for (PlayerUpdate update : updates) {
             update(update.id(), update.name(), update.riotId(), update.mainPosition(), update.subPosition(), update.tier());
         }
+    }
+
+    /** 경기 기록이 있어서 삭제할 수 없는 플레이어 id */
+    public Set<Long> idsWithMatches() {
+        return new HashSet<>(matchParticipantRepository.findPlayerIdsWithMatches());
     }
 
     @Transactional

@@ -141,4 +141,33 @@ public class PlayerServiceTest {
 
         assertThat(playerService.findById(a).getName()).isEqualTo("철수");
     }
+
+    @Test
+    void 목록_저장에서_체크한_플레이어를_삭제하고_나머지는_수정한다(){
+        Long a = playerService.register("철수", "철수#KR1", Position.MID, null, null);
+        Long b = playerService.register("영희", "영희#KR1", Position.TOP, null, Tier.GOLD);
+
+        // 철수를 지우면서 영희가 철수의 라이엇 ID를 가져간다 → 삭제가 먼저 반영돼야 한다
+        playerService.saveAll(List.of(new PlayerUpdate(b, "영희", "철수#KR1", Position.TOP, null, Tier.GOLD)), List.of(a));
+
+        assertThatThrownBy(() -> playerService.findById(a)).isInstanceOf(NotFoundException.class);
+        assertThat(playerService.findById(b).getRiotId()).isEqualTo("철수#KR1");
+    }
+
+    @Test
+    void 목록_저장에서_경기_기록이_있는_플레이어를_지우려_하면_아무것도_바꾸지_않는다(){
+        Long a = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
+        Long b = playerService.register("영희", "영희#KR1", Position.TOP, null, Tier.GOLD);
+        Match match = new Match(LocalDate.now(), Team.BLUE);
+        match.addParticipant(playerService.findById(a), Team.BLUE, Position.MID);
+        matchRepository.save(match);
+
+        assertThatThrownBy(() -> playerService.saveAll(
+                List.of(new PlayerUpdate(b, "영희2", "영희#KR1", Position.TOP, null, Tier.GOLD)), List.of(a)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("철수");
+
+        assertThat(playerService.findById(b).getName()).isEqualTo("영희");
+        assertThat(playerService.idsWithMatches()).containsExactly(a);
+    }
 }

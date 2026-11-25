@@ -200,6 +200,57 @@ input[type=checkbox], input[type=radio] { width: 17px; height: 17px; cursor: poi
 .radio-group { display: flex; gap: 22px; min-height: 42px; align-items: center; }
 .radio-group label { display: flex; gap: 8px; align-items: center; cursor: pointer; font-family: var(--display); font-size: 16px; }
 .inline-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 700px; }
+/* 화면에는 안 보이지만 키보드와 화면 낭독기는 쓸 수 있게 숨긴다 */
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- 팀 나누기: 참가자 고르기 (드래그) ---------- */
+.picker { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+.picker-panel { background: var(--surface); border: 1px solid var(--line); padding: 16px; }
+.roster-panel { position: sticky; top: 16px; border-top: 3px solid var(--accent); }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.panel-head h2 { margin: 0; }
+.btn.small { min-height: 32px; padding: 0 14px; font-size: 13px; }
+.roster-count { font-family: var(--score); font-size: 18px; color: var(--muted); margin-left: 6px; }
+.roster-count strong { color: var(--text); }
+.roster-count.ok strong { color: var(--accent); }
+.roster-count.over strong { color: var(--red-text); }
+
+.card-zone { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; min-height: 80px; transition: background .12s, outline-color .12s; outline: 2px dashed transparent; outline-offset: 4px; }
+.card-zone.roster { grid-template-columns: 1fr; gap: 6px; }
+.card-zone.drag-over { outline-color: var(--accent); background: var(--accent-soft); }
+.zone-empty { grid-column: 1 / -1; color: var(--muted); margin: 0; }
+
+.player-card {
+    display: flex; flex-direction: column; gap: 4px; padding: 10px 12px;
+    background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid var(--line);
+    cursor: grab; user-select: none; transition: border-color .12s, transform .12s, opacity .12s;
+}
+.player-card:hover { border-color: var(--accent); }
+.player-card:active { cursor: grabbing; }
+.player-card.dragging { opacity: .35; }
+/* 끌고 있는 동안 마우스를 따라다니는 카드 복사본 */
+.drag-ghost {
+    position: fixed; left: 0; top: 0; z-index: 100; pointer-events: none; margin: 0;
+    border-color: var(--accent); box-shadow: 0 12px 28px rgba(0, 0, 0, .55); opacity: .95;
+    transition: none; /* 마우스를 바로 따라오게 */
+}
+body:has(.drag-ghost) { cursor: grabbing; user-select: none; }
+/* 체크된 카드 = 참가자 (자바스크립트가 없어도 색으로 구분된다) */
+.player-card:has(input:checked) { border-left-color: var(--accent); background: #232a38; }
+.player-card:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.card-name { font-weight: 700; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-meta { display: flex; gap: 6px; font-size: 12px; color: var(--muted); font-family: var(--score); letter-spacing: .04em; }
+.card-rate { margin-left: auto; }
+.roster .player-card { flex-direction: row; align-items: center; justify-content: space-between; }
+.roster .card-meta .card-rate { display: none; }
+
+.slot-empty {
+    display: flex; align-items: center; min-height: 44px; padding: 0 12px;
+    border: 1px dashed var(--line); color: var(--dim); font-size: 13px;
+}
+.roster-hint { margin: 12px 0 0; font-size: 13px; color: var(--muted); }
+
 /* 목록 수정 표: 칸 안에 입력칸이 들어간다 */
 .edit-table td { vertical-align: top; padding: 8px 10px; }
 .edit-table input[type=text], .edit-table select { min-height: 38px; min-width: 120px; }
@@ -207,6 +258,14 @@ input[type=checkbox], input[type=radio] { width: 17px; height: 17px; cursor: poi
 .edit-table .field-error { white-space: normal; max-width: 220px; }
 .edit-table tr.row-error { background: rgba(255, 51, 85, .08); }
 .bottom-actions { margin-top: 16px; }
+.delete-cell { white-space: nowrap; }
+.delete-label { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; cursor: pointer; color: var(--muted); font-size: 13px; }
+.delete-label:has(input:disabled) { cursor: not-allowed; color: var(--dim); }
+.delete-label:has(input:checked) { color: var(--red-text); font-weight: 700; }
+/* 삭제로 체크한 줄은 흐리게 하고 이름과 라이엇 ID에 줄을 긋는다 */
+.edit-table tr:has(.delete-check:checked) { background: rgba(255, 51, 85, .10); }
+.edit-table tr:has(.delete-check:checked) td:not(.delete-cell) { opacity: .45; }
+.edit-table tr:has(.delete-check:checked) input[type=text] { text-decoration: line-through; }
 .select-all { display: inline-flex; gap: 8px; align-items: center; cursor: pointer; }
 
 /* ---------- 대진표: 블루 vs 레드 ---------- */
@@ -256,6 +315,11 @@ input[type=checkbox], input[type=radio] { width: 17px; height: 17px; cursor: poi
     .teams, .inline-fields { grid-template-columns: 1fr; }
     .teams { gap: 16px; }
     .teams::after { display: none; }
+    .picker { grid-template-columns: 1fr; }
+    .roster-panel { order: -1; position: static; }
+    /* 휴대폰에서는 빈 자리를 한 줄만 보여줘서 플레이어 카드가 너무 아래로 밀리지 않게 한다 */
+    .slot-empty { display: none; }
+    .slot-empty:first-of-type { display: flex; }
     .team.red .team-title { flex-direction: row; background: linear-gradient(90deg, var(--red) 0%, var(--red-dark) 100%); }
     .team.red .slot { grid-template-columns: 92px minmax(0, 1fr) auto; }
     .team.red .slot > :nth-child(n) { order: 0; text-align: left; }

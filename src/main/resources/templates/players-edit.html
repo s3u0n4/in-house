@@ -9,11 +9,12 @@
 <th:block th:replace="~{fragments/layout :: header('players')}"></th:block>
 
 <main class="container">
-    <form th:action="@{/players/edit}" th:object="${playerListForm}" method="post">
+    <form th:action="@{/players/edit}" th:object="${playerListForm}" method="post" id="players-edit-form">
         <div class="page-head">
             <div>
                 <h1>플레이어 목록 수정</h1>
-                <p class="sub">칸을 고친 뒤 저장을 누르면 한 번에 반영됩니다. 하나라도 잘못되면 아무것도 저장되지 않아요.</p>
+                <p class="sub">칸을 고친 뒤 저장을 누르면 한 번에 반영됩니다. 하나라도 잘못되면 아무것도 저장되지 않아요.<br>
+                    지울 플레이어는 맨 오른쪽 <strong>삭제</strong>를 체크하세요. 경기 기록이 있는 플레이어는 삭제할 수 없어요.</p>
             </div>
             <div class="actions">
                 <button class="btn primary" type="submit">저장</button>
@@ -29,7 +30,7 @@
         <div class="table-wrap">
             <table class="edit-table">
                 <thead>
-                <tr><th>이름</th><th>라이엇 ID</th><th>티어</th><th>주 포지션</th><th>부 포지션</th></tr>
+                <tr><th>이름</th><th>라이엇 ID</th><th>티어</th><th>주 포지션</th><th>부 포지션</th><th>삭제</th></tr>
                 </thead>
                 <tbody>
                 <!-- rows[0], rows[1] ... : 줄 번호를 붙여야 서버에서 리스트로 받을 수 있다 -->
@@ -69,9 +70,19 @@
                             <option th:each="pos : ${positions}" th:value="${pos}" th:text="${pos}">TOP</option>
                         </select>
                     </td>
+                    <td class="delete-cell" th:with="locked=${#sets.contains(idsWithMatches, row.id)}">
+                        <!-- 경기 기록이 있으면 체크할 수 없게 막는다 (서버에서도 한 번 더 검사) -->
+                        <label class="delete-label" th:title="${locked} ? '경기 기록이 있어 삭제할 수 없어요' : '저장할 때 삭제'">
+                            <input type="checkbox" class="delete-check" th:field="*{rows[__${stat.index}__].delete}"
+                                   th:disabled="${locked}" th:attr="aria-label=|${stat.count}번째 삭제|">
+                            <span th:text="${locked} ? '기록 있음' : '삭제'">삭제</span>
+                        </label>
+                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].delete')}"
+                           th:errors="*{rows[__${stat.index}__].delete}">삭제 오류</p>
+                    </td>
                 </tr>
                 <tr th:if="*{#lists.isEmpty(rows)}">
-                    <td class="empty" colspan="5">등록된 플레이어가 없습니다.</td>
+                    <td class="empty" colspan="6">등록된 플레이어가 없습니다.</td>
                 </tr>
                 </tbody>
             </table>
@@ -83,5 +94,15 @@
         </div>
     </form>
 </main>
+
+<script>
+    // 삭제를 체크한 줄이 있으면 저장 전에 한 번 더 묻는다
+    document.getElementById('players-edit-form').addEventListener('submit', function (event) {
+        var count = document.querySelectorAll('.delete-check:checked').length;
+        if (count > 0 && !confirm(count + '명을 삭제할까요? 삭제하면 되돌릴 수 없어요.')) {
+            event.preventDefault();
+        }
+    });
+</script>
 </body>
 </html>

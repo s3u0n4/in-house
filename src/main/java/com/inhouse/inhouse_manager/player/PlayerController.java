@@ -1,7 +1,9 @@
 package com.inhouse.inhouse_manager.player;
 
 import com.inhouse.inhouse_manager.stats.StatsService;
+import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Valid;
+import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,12 +17,15 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Controller
 @RequiredArgsConstructor
 public class PlayerController {
     private final PlayerService playerService;
     private final StatsService statsService;
+    /** 목록 수정에서 줄마다 직접 검사할 때 쓰는 Bean Validation 검사기 (스프링 부트가 만들어 준다) */
+    private final Validator validator;
 
     @GetMapping("/players")
     public String list(Model model) {
@@ -39,12 +44,32 @@ public class PlayerController {
     }
 
     @PostMapping("/players/edit")
-    public String editAll(@Valid @ModelAttribute PlayerListForm playerListForm, BindingResult bindingResult,
+    public String editAll(@ModelAttribute PlayerListForm playerListForm, BindingResult bindingResult,
                           Model model, RedirectAttributes redirectAttributes) {
-        // 같은 라이엇 ID를 두 줄에 적었으면 두 번째 줄에 오류를 붙인다
         List<PlayerListForm.Row> rows = playerListForm.getRows();
+        Set<Long> idsWithMatches = playerService.idsWithMatches();
+
+        // 1) 삭제하지 않는 줄만 입력값 검사 (PlayerForm의 @NotBlank, @NotNull 등)
+        //    삭제할 줄까지 검사하면, 티어가 비어 있는 옛 플레이어를 지울 때도 "티어를 선택하세요"에 막힌다
+        for (int i = 0; i < rows.size(); i++) {
+            PlayerListForm.Row row = rows.get(i);
+            if (row.isDelete()) {
+                if (idsWithMatches.contains(row.getId())) {
+                    bindingResult.rejectValue("rows[" + i + "].delete", "hasMatches", "경기 기록이 있어 삭제할 수 없습니다.");
+                }
+                continue;
+            }
+            for (ConstraintViolation<PlayerListForm.Row> violation : validator.validate(row)) {
+                bindingResult.rejectValue("rows[" + i + "]." + violation.getPropertyPath(), "invalid", violation.getMessage());
+            }
+        }
+
+        // 2) 같은 라이엇 ID를 두 줄에 적었으면 두 번째 줄에 오류를 붙인다 (삭제할 줄은 빼고 비교)
         Map<String, Integer> firstRowByRiotId = new HashMap<>();
         for (int i = 0; i < rows.size(); i++) {
+            if (rows.get(i).isDelete()) {
+                continue;
+            }
             String riotId = rows.get(i).getRiotId();
             if (riotId == null || riotId.isBlank()) {
                 continue;
@@ -59,15 +84,21 @@ public class PlayerController {
             addFormOptions(model, null);
             return "players-edit";
         }
+        List<PlayerUpdate> updates = rows.stream().filter(row -> !row.isDelete()).map(PlayerListForm.Row::toUpdate).toList();
+        List<Long> deleteIds = rows.stream().filter(PlayerListForm.Row::isDelete).map(PlayerListForm.Row::getId).toList();
         try {
-            playerService.updateAll(rows.stream().map(PlayerListForm.Row::toUpdate).toList());
-        } catch (IllegalArgumentException e) {
-            // 목록에 없는 플레이어(예: 그사이 새로 등록된 사람)와 라이엇 ID가 겹치는 경우
-            bindingResult.reject("duplicate", e.getMessage());
+            playerService.saveAll(updates, deleteIds);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            // 목록에 없는 플레이어(예: 그사이 새로 등록된 사람)와 라이엇 ID가 겹치거나, 그사이 경기 기록이 생긴 경우
+            bindingResult.reject("saveFailed", e.getMessage());
             addFormOptions(model, null);
             return "players-edit";
         }
-        redirectAttributes.addFlashAttribute("message", "플레이어 " + rows.size() + "명의 정보를 저장했습니다.");
+        String message = "플레이어 " + updates.size() + "명의 정보를 저장했습니다.";
+        if (!deleteIds.isEmpty()) {
+            message += " (" + deleteIds.size() + "명 삭제)";
+        }
+        redirectAttributes.addFlashAttribute("message", message);
         return "redirect:/players";
     }
 
@@ -158,5 +189,6 @@ public class PlayerController {
         model.addAttribute("positions", Position.values());
         model.addAttribute("tiers", Tier.values());
         model.addAttribute("playerId", playerId);
+        model.addAttribute("idsWithMatches", playerService.idsWithMatches());
     }
 }
