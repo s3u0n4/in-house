@@ -26,18 +26,23 @@ public class Player {
     @Enumerated(EnumType.STRING)
     private Position subPosition;
 
+    // 티어 기능 전에 등록한 플레이어는 값이 없어서 DB에서는 null을 허용한다 (새로 등록할 때는 폼에서 필수)
+    @Enumerated(EnumType.STRING)
+    private Tier tier;
 
-    public Player(String name, String riotId, Position mainPosition, Position subPosition) {
+    public Player(String name, String riotId, Position mainPosition, Position subPosition, Tier tier) {
         this.name = name;
         this.riotId = riotId;
         this.mainPosition = mainPosition;
         this.subPosition = subPosition;
+        this.tier = tier;
     }
 
-    public void update(String name, String riotId, Position mainPosition, Position subPosition) {
+    public void update(String name, String riotId, Position mainPosition, Position subPosition, Tier tier) {
         this.name = name;
         this.riotId = riotId;
         this.mainPosition = mainPosition;
         this.subPosition = subPosition;
+        this.tier = tier;
     }
 }

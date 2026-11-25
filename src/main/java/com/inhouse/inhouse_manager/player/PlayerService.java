@@ -16,24 +16,24 @@ public class PlayerService {
     private final MatchParticipantRepository matchParticipantRepository;
 
     @Transactional
-    public Long register(String name, String riotId, Position mainPosition, Position subPosition) {
+    public Long register(String name, String riotId, Position mainPosition, Position subPosition, Tier tier) {
         String trimmedRiotId = riotId.strip();
         if (playerRepository.existsByRiotId(trimmedRiotId)){
             throw new IllegalArgumentException("이미 등록된 라이엇 ID입니다: " + trimmedRiotId);
         }
-        Player player = new Player(name.strip(), trimmedRiotId, mainPosition, subPosition);
+        Player player = new Player(name.strip(), trimmedRiotId, mainPosition, subPosition, tier);
         return playerRepository.save(player).getId();
     }
 
     @Transactional
-    public void update(Long id, String name, String riotId, Position mainPosition, Position subPosition) {
+    public void update(Long id, String name, String riotId, Position mainPosition, Position subPosition, Tier tier) {
         Player player = findById(id);
         String trimmedRiotId = riotId.strip();
         if (playerRepository.existsByRiotIdAndIdNot(trimmedRiotId, id)) {
             throw new IllegalArgumentException("이미 등록된 라이엇 ID입니다: " + trimmedRiotId);
         }
         // 트랜잭션이 끝날 때 JPA가 바뀐 필드를 찾아 UPDATE 한다 (변경 감지). save()를 다시 부를 필요가 없다.
-        player.update(name.strip(), trimmedRiotId, mainPosition, subPosition);
+        player.update(name.strip(), trimmedRiotId, mainPosition, subPosition, tier);
     }
 
     @Transactional

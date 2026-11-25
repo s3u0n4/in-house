@@ -163,6 +163,25 @@ tr.row-lose td:first-child { box-shadow: inset 5px 0 0 var(--red); padding-left:
 .badge.fit-2 { background: var(--accent); color: #0b0d12; }
 .badge.fit-1 { background: #3a4152; color: var(--text); }
 .badge.fit-0 { background: #1d222c; color: var(--dim); }
+/* 티어 배지: 티어마다 색이 다르다. 배경은 글자색을 옅게 깐다 */
+.tier {
+    display: inline-block; padding: 1px 9px; font-size: 12px; font-weight: 700; white-space: nowrap;
+    color: var(--muted); border: 1px solid currentColor; border-radius: 2px;
+    background: color-mix(in srgb, currentColor 14%, transparent);
+}
+.tier-IRON { color: #9a948e; }
+.tier-BRONZE { color: #c0814f; }
+.tier-SILVER { color: #b4c0cc; }
+.tier-GOLD { color: #e6b84f; }
+.tier-PLATINUM { color: #4fc0ad; }
+.tier-EMERALD { color: #31d17c; }
+.tier-DIAMOND { color: #74a9ff; }
+.tier-MASTER { color: #c27cf0; }
+.tier-GRANDMASTER { color: #ff6464; }
+.tier-CHALLENGER { color: #ffd86b; }
+.tier-text { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 6px; }
+.team.red .tier-text { margin: 0 6px 0 0; }
+
 .team-blue { color: var(--blue-text); font-weight: 700; }
 .team-red { color: var(--red-text); font-weight: 700; }
 

@@ -47,7 +47,8 @@ public class PlayerController {
                     playerForm.getName(),
                     playerForm.getRiotId(),
                     playerForm.getMainPosition(),
-                    playerForm.getSubPosition()
+                    playerForm.getSubPosition(),
+                    playerForm.getTier()
             );
         } catch (IllegalArgumentException e) {
             bindingResult.rejectValue("riotId", "duplicate", e.getMessage());
@@ -85,7 +86,8 @@ public class PlayerController {
                     playerForm.getName(),
                     playerForm.getRiotId(),
                     playerForm.getMainPosition(),
-                    playerForm.getSubPosition()
+                    playerForm.getSubPosition(),
+                    playerForm.getTier()
             );
         } catch (IllegalArgumentException e) {
             bindingResult.rejectValue("riotId", "duplicate", e.getMessage());
@@ -111,6 +113,7 @@ public class PlayerController {
     /** 등록과 수정이 같은 폼 화면을 쓴다. playerId가 null이면 등록, 있으면 수정 */
     private void addFormOptions(Model model, Long playerId) {
         model.addAttribute("positions", Position.values());
+        model.addAttribute("tiers", Tier.values());
         model.addAttribute("playerId", playerId);
     }
 }

@@ -17,7 +17,7 @@ class PlayerRepositoryTest {
     @Test
     void 플레이어를_저장하고_라이엇ID로_조회한다(){
         // given: 준비
-        Player player = new Player("철수", "철수#KR1", Position.MID, Position.TOP);
+        Player player = new Player("철수", "철수#KR1", Position.MID, Position.TOP, Tier.GOLD);
 
         // when: 실행
         playerRepository.save(player);

@@ -15,6 +15,7 @@
             <p class="sub">
                 주 포지션 <strong th:text="${player.mainPosition}">ADC</strong>
                 · 부 포지션 <strong th:text="${player.subPosition} ?: '-'">SUPPORT</strong>
+                · 티어 <span class="tier" th:classappend="|tier-${player.tier}|" th:text="${player.tier?.label} ?: '-'">골드</span>
             </p>
         </div>
         <div class="actions">

@@ -19,6 +19,7 @@
             <tr>
                 <th>이름</th>
                 <th>라이엇 ID</th>
+                <th>티어</th>
                 <th>주 포지션</th>
                 <th>부 포지션</th>
                 <th class="num">경기</th>
@@ -32,6 +33,7 @@
             <tr th:each="player : ${players}" th:with="s=${stats[player.id]}">
                 <td><a th:href="@{/players/{id}(id=${player.id})}" th:text="${player.name}">홍길동</a></td>
                 <td th:text="${player.riotId}">Hong#KR1</td>
+                <td><span class="tier" th:classappend="|tier-${player.tier}|" th:text="${player.tier?.label} ?: '-'">골드</span></td>
                 <td th:text="${player.mainPosition}">MID</td>
                 <td th:text="${player.subPosition} ?: '-'">TOP</td>
                 <td class="num" th:text="${s.games()}">0</td>
@@ -40,7 +42,7 @@
                 <td class="num" th:text="${s.winRateText()}">-</td>
             </tr>
             <tr th:if="${#lists.isEmpty(players)}">
-                <td class="empty" colspan="8">등록된 플레이어가 없습니다.</td>
+                <td class="empty" colspan="9">등록된 플레이어가 없습니다.</td>
             </tr>
             </tbody>
         </table>

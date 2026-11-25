@@ -21,12 +21,16 @@ public class PlayerForm {
     private Position mainPosition;
     private Position subPosition;
 
+    @NotNull(message = "티어를 선택하세요.")
+    private Tier tier;
+
     public static PlayerForm from(Player player) {
         PlayerForm form = new PlayerForm();
         form.setName(player.getName());
         form.setRiotId(player.getRiotId());
         form.setMainPosition(player.getMainPosition());
         form.setSubPosition(player.getSubPosition());
+        form.setTier(player.getTier());
         return form;
     }
 }

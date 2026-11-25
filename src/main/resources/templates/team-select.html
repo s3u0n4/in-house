@@ -27,7 +27,7 @@
                 <thead>
                 <tr>
                     <th><label class="select-all"><input type="checkbox" id="select-all"> 전체</label></th>
-                    <th>이름</th><th>주 포지션</th><th>부 포지션</th><th class="num">경기</th><th class="num">승률</th></tr>
+                    <th>이름</th><th>티어</th><th>주 포지션</th><th>부 포지션</th><th class="num">경기</th><th class="num">승률</th></tr>
                 </thead>
                 <tbody>
                 <tr th:each="player : ${players}" th:with="s=${stats[player.id]}">
@@ -37,13 +37,14 @@
                                th:checked="${#lists.contains(selectedIds, player.id)}">
                     </td>
                     <td><label th:for="|player-${player.id}|" th:text="${player.name}">홍길동</label></td>
+                    <td><span class="tier" th:classappend="|tier-${player.tier}|" th:text="${player.tier?.label} ?: '-'">골드</span></td>
                     <td th:text="${player.mainPosition}">MID</td>
                     <td th:text="${player.subPosition} ?: '-'">-</td>
                     <td class="num" th:text="${s.games()}">0</td>
                     <td class="num" th:text="${s.winRateText()}">-</td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(players)}">
-                    <td class="empty" colspan="6">등록된 플레이어가 없습니다. <a th:href="@{/players/new}">플레이어 등록하기</a></td>
+                    <td class="empty" colspan="7">등록된 플레이어가 없습니다. <a th:href="@{/players/new}">플레이어 등록하기</a></td>
                 </tr>
                 </tbody>
             </table>

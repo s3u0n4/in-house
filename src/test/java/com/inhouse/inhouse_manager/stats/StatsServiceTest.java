@@ -5,6 +5,7 @@ import com.inhouse.inhouse_manager.match.Team;
 import com.inhouse.inhouse_manager.player.Player;
 import com.inhouse.inhouse_manager.player.PlayerRepository;
 import com.inhouse.inhouse_manager.player.Position;
+import com.inhouse.inhouse_manager.player.Tier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +38,7 @@ class StatsServiceTest {
     void setUp() {
         ids = new ArrayList<>();
         for (int i = 1; i <= 11; i++) {
-            ids.add(playerRepository.save(new Player("플레이어" + i, "player#" + i, Position.MID, null)).getId());
+            ids.add(playerRepository.save(new Player("플레이어" + i, "player#" + i, Position.MID, null, Tier.GOLD)).getId());
         }
     }
 

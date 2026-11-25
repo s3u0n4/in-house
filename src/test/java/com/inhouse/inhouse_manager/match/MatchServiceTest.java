@@ -4,6 +4,7 @@ import com.inhouse.inhouse_manager.common.NotFoundException;
 import com.inhouse.inhouse_manager.player.Player;
 import com.inhouse.inhouse_manager.player.PlayerRepository;
 import com.inhouse.inhouse_manager.player.Position;
+import com.inhouse.inhouse_manager.player.Tier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +39,7 @@ class MatchServiceTest {
     void setUp() {
         List<Long> ids = new ArrayList<>();
         for (int i = 1; i <= 10; i++) {
-            ids.add(playerRepository.save(new Player("플레이어" + i, "player#" + i, Position.MID, null)).getId());
+            ids.add(playerRepository.save(new Player("플레이어" + i, "player#" + i, Position.MID, null, Tier.GOLD)).getId());
         }
         blueIds = ids.subList(0, 5);
         redIds = ids.subList(5, 10);
