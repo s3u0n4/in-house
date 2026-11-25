@@ -1,0 +1,87 @@
+<!doctype html>
+<!-- 목록 수정: 모든 플레이어를 표 하나에서 고치고 한 번에 저장한다 -->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('플레이어 목록 수정')}">
+    <meta charset="UTF-8">
+    <title>플레이어 목록 수정</title>
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: header('players')}"></th:block>
+
+<main class="container">
+    <form th:action="@{/players/edit}" th:object="${playerListForm}" method="post">
+        <div class="page-head">
+            <div>
+                <h1>플레이어 목록 수정</h1>
+                <p class="sub">칸을 고친 뒤 저장을 누르면 한 번에 반영됩니다. 하나라도 잘못되면 아무것도 저장되지 않아요.</p>
+            </div>
+            <div class="actions">
+                <button class="btn primary" type="submit">저장</button>
+                <a class="btn" th:href="@{/players}">취소</a>
+            </div>
+        </div>
+
+        <div class="alert error" th:if="${#fields.hasErrors('*')}">
+            <p th:each="err : ${#fields.globalErrors()}" th:text="${err}">같은 라이엇 ID가 두 줄에 있습니다.</p>
+            <p th:unless="${#fields.hasGlobalErrors()}">빨간 안내가 있는 칸을 고쳐 주세요.</p>
+        </div>
+
+        <div class="table-wrap">
+            <table class="edit-table">
+                <thead>
+                <tr><th>이름</th><th>라이엇 ID</th><th>티어</th><th>주 포지션</th><th>부 포지션</th></tr>
+                </thead>
+                <tbody>
+                <!-- rows[0], rows[1] ... : 줄 번호를 붙여야 서버에서 리스트로 받을 수 있다 -->
+                <tr th:each="row, stat : *{rows}"
+                    th:classappend="${#fields.hasErrors('rows[__${stat.index}__].*')} ? 'row-error'">
+                    <td>
+                        <input type="hidden" th:field="*{rows[__${stat.index}__].id}">
+                        <input type="text" th:field="*{rows[__${stat.index}__].name}" th:attr="aria-label=|${stat.count}번째 이름|">
+                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].name')}"
+                           th:errors="*{rows[__${stat.index}__].name}">이름 오류</p>
+                    </td>
+                    <td>
+                        <input type="text" th:field="*{rows[__${stat.index}__].riotId}" placeholder="이름#태그"
+                               th:attr="aria-label=|${stat.count}번째 라이엇 ID|">
+                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].riotId')}"
+                           th:errors="*{rows[__${stat.index}__].riotId}">라이엇 ID 오류</p>
+                    </td>
+                    <td>
+                        <select th:field="*{rows[__${stat.index}__].tier}" th:attr="aria-label=|${stat.count}번째 티어|">
+                            <option value="">선택하세요</option>
+                            <option th:each="t : ${tiers}" th:value="${t}" th:text="${t.label}">골드</option>
+                        </select>
+                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].tier')}"
+                           th:errors="*{rows[__${stat.index}__].tier}">티어 오류</p>
+                    </td>
+                    <td>
+                        <select th:field="*{rows[__${stat.index}__].mainPosition}" th:attr="aria-label=|${stat.count}번째 주 포지션|">
+                            <option value="">선택하세요</option>
+                            <option th:each="pos : ${positions}" th:value="${pos}" th:text="${pos}">MID</option>
+                        </select>
+                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].mainPosition')}"
+                           th:errors="*{rows[__${stat.index}__].mainPosition}">포지션 오류</p>
+                    </td>
+                    <td>
+                        <select th:field="*{rows[__${stat.index}__].subPosition}" th:attr="aria-label=|${stat.count}번째 부 포지션|">
+                            <option value="">없음</option>
+                            <option th:each="pos : ${positions}" th:value="${pos}" th:text="${pos}">TOP</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr th:if="*{#lists.isEmpty(rows)}">
+                    <td class="empty" colspan="5">등록된 플레이어가 없습니다.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="actions bottom-actions">
+            <button class="btn primary" type="submit">저장</button>
+            <a class="btn" th:href="@{/players}">취소</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

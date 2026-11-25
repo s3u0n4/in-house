@@ -200,6 +200,13 @@ input[type=checkbox], input[type=radio] { width: 17px; height: 17px; cursor: poi
 .radio-group { display: flex; gap: 22px; min-height: 42px; align-items: center; }
 .radio-group label { display: flex; gap: 8px; align-items: center; cursor: pointer; font-family: var(--display); font-size: 16px; }
 .inline-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 700px; }
+/* 목록 수정 표: 칸 안에 입력칸이 들어간다 */
+.edit-table td { vertical-align: top; padding: 8px 10px; }
+.edit-table input[type=text], .edit-table select { min-height: 38px; min-width: 120px; }
+.edit-table td:nth-child(2) input { min-width: 170px; }
+.edit-table .field-error { white-space: normal; max-width: 220px; }
+.edit-table tr.row-error { background: rgba(255, 51, 85, .08); }
+.bottom-actions { margin-top: 16px; }
 .select-all { display: inline-flex; gap: 8px; align-items: center; cursor: pointer; }
 
 /* ---------- 대진표: 블루 vs 레드 ---------- */

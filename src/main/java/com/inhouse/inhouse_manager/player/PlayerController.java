@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -26,6 +28,47 @@ public class PlayerController {
         model.addAttribute("players", players);
         model.addAttribute("stats", statsService.statsByPlayer(players.stream().map(Player::getId).toList()));
         return "players";
+    }
+
+    /** 목록 수정: 모든 플레이어를 표 하나에서 고친다 */
+    @GetMapping("/players/edit")
+    public String editAllForm(Model model) {
+        model.addAttribute("playerListForm", PlayerListForm.from(playerService.findAll()));
+        addFormOptions(model, null);
+        return "players-edit";
+    }
+
+    @PostMapping("/players/edit")
+    public String editAll(@Valid @ModelAttribute PlayerListForm playerListForm, BindingResult bindingResult,
+                          Model model, RedirectAttributes redirectAttributes) {
+        // 같은 라이엇 ID를 두 줄에 적었으면 두 번째 줄에 오류를 붙인다
+        List<PlayerListForm.Row> rows = playerListForm.getRows();
+        Map<String, Integer> firstRowByRiotId = new HashMap<>();
+        for (int i = 0; i < rows.size(); i++) {
+            String riotId = rows.get(i).getRiotId();
+            if (riotId == null || riotId.isBlank()) {
+                continue;
+            }
+            Integer firstRow = firstRowByRiotId.putIfAbsent(riotId.strip(), i);
+            if (firstRow != null) {
+                bindingResult.rejectValue("rows[" + i + "].riotId", "duplicate",
+                        (firstRow + 1) + "번째 줄과 라이엇 ID가 같습니다.");
+            }
+        }
+        if (bindingResult.hasErrors()) {
+            addFormOptions(model, null);
+            return "players-edit";
+        }
+        try {
+            playerService.updateAll(rows.stream().map(PlayerListForm.Row::toUpdate).toList());
+        } catch (IllegalArgumentException e) {
+            // 목록에 없는 플레이어(예: 그사이 새로 등록된 사람)와 라이엇 ID가 겹치는 경우
+            bindingResult.reject("duplicate", e.getMessage());
+            addFormOptions(model, null);
+            return "players-edit";
+        }
+        redirectAttributes.addFlashAttribute("message", "플레이어 " + rows.size() + "명의 정보를 저장했습니다.");
+        return "redirect:/players";
     }
 
     @GetMapping("/players/new")

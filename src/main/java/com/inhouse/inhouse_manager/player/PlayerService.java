@@ -6,7 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +36,23 @@ public class PlayerService {
         }
         // 트랜잭션이 끝날 때 JPA가 바뀐 필드를 찾아 UPDATE 한다 (변경 감지). save()를 다시 부를 필요가 없다.
         player.update(name.strip(), trimmedRiotId, mainPosition, subPosition, tier);
+    }
+
+    /**
+     * 여러 명을 한 번에 수정한다. 하나의 트랜잭션이라 중간에 하나라도 실패하면 전부 저장되지 않는다.
+     */
+    @Transactional
+    public void updateAll(List<PlayerUpdate> updates) {
+        Set<String> riotIds = new HashSet<>();
+        for (PlayerUpdate update : updates) {
+            String trimmedRiotId = update.riotId().strip();
+            if (!riotIds.add(trimmedRiotId)) {
+                throw new IllegalArgumentException("같은 라이엇 ID가 두 줄에 있습니다: " + trimmedRiotId);
+            }
+        }
+        for (PlayerUpdate update : updates) {
+            update(update.id(), update.name(), update.riotId(), update.mainPosition(), update.subPosition(), update.tier());
+        }
     }
 
     @Transactional

@@ -33,8 +33,10 @@ src/main/java/com/inhouse/inhouse_manager/
  ├─ player/
  │   ├─ Player.java, Position.java, Tier.java(아이언 1 ~ 챌린저 10, 언랭 null), PlayerRepository.java
  │   ├─ PlayerService.java       등록/수정/삭제(경기 기록 있으면 불가)/조회
- │   ├─ PlayerController.java    /players, /players/new, /players/{id}, /players/{id}/edit, /players/{id}/delete
- │   └─ PlayerForm.java          등록·수정 폼 + 검증
+ │   ├─ PlayerController.java    /players, /players/new, /players/edit(목록 수정), /players/{id}, /players/{id}/edit, /players/{id}/delete
+ │   ├─ PlayerForm.java          등록·수정 폼 + 검증
+ │   ├─ PlayerListForm.java      목록 수정 폼 (Row extends PlayerForm + id, @Valid 리스트)
+ │   └─ PlayerUpdate.java        record, 여러 명 수정용 (PlayerService.updateAll, 한 트랜잭션)
  ├─ match/
  │   ├─ Team.java                enum BLUE/RED (label: 블루/레드)
  │   ├─ Match.java               테이블 matches. participants @OneToMany(cascade ALL, orphanRemoval)
@@ -53,7 +55,7 @@ src/main/java/com/inhouse/inhouse_manager/
      └─ TeamController.java      /teams, /teams/result (GET, shuffle=seed면 5개 라인 각각 교체 여부를 랜덤으로, 1~4쌍 교체)
 src/main/resources/templates/
  ├─ fragments/layout.html, error.html, error/404.html
- ├─ players.html, player-form.html(등록·수정 같이 씀), player-detail.html
+ ├─ players.html, players-edit.html(목록 수정), player-form.html(등록·수정 같이 씀), player-detail.html
  ├─ matches.html, match-form.html, match-detail.html
  └─ team-select.html, team-result.html
 src/test/java/com/inhouse/inhouse_manager/
@@ -93,6 +95,7 @@ src/test/java/com/inhouse/inhouse_manager/
 > - 2026-11-25: 사용자 요청으로 실제 DB에 임의 티어의 테스트 플레이어 10명(라이엇 ID `#RAND`, id 12~21)을 추가하고 팀 나누기를 시험했다. 전력 차이 0.0, 티어 분포 차이 6.0(이 10명으로 가능한 최솟값), 10명 모두 주 포지션.
 > - 2026-11-25: "짜인 팀에서 2명씩 매칭해서 랜덤으로 팀 바꾸기" 추가. 같은 라인끼리 짝지어 1~2쌍을 맞바꾸고, 불균형이 +2 넘게 늘어나는 조합은 제외(후보가 3개 미만이면 불균형이 작은 3개). 처음엔 아무 쌍이나 바꿔서 전력 차이가 11까지 벌어졌고, `java.util.Random`은 seed가 비슷하면 같은 값이 나와서 `SplittableRandom`으로 바꿨다. 테스트 35개.
 > - 2026-11-25: 사용자 요청("2명씩이 아니라 5명 다 바꾸는데 바뀐 사람만 표시")으로 랜덤 교체 대상을 5개 라인 전체로 넓혔다(1~2쌍 → 1~4쌍, 30가지 조합). 균형 필터는 유지했다.
+> - 2026-11-25: 플레이어 "목록 수정" 화면 추가 (여러 명을 표에서 한 번에 수정, 오류면 전부 저장 안 함). 처음 방문 때 주소에 `;jsessionid`가 붙어서 `server.servlet.session.tracking-modes=cookie` 설정을 추가했다. 테스트 37개.
 > **현재 위치 (2026-11-25):** 요구사항명세서의 필수 기능과 권장 기능을 모두 구현했다. 사용자가 8081 서버를 재시작했고, 모든 화면이 정상 응답하는 것을 확인했다(경기 테이블 자동 생성, 404 화면 포함). 사용자의 요청으로 테스트용 플레이어 8명(`테스트탑1`~`테스트서폿2`, 라이엇 ID는 `#TEST`로 끝남)을 사용자 DB에 등록했다. 총 10명이다. 사용자가 팀 나누기 → 경기 기록으로 첫 경기(match id 1, 2026-11-25, 블루 승)를 기록했고, 목록, 상세, 전적이 모두 맞게 반영된 것을 확인했다. 이제 테스트 플레이어를 지우려면 경기부터 삭제해야 한다.
 
 후보 (요구사항명세서 1.3 "제외" 항목):

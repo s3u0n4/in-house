@@ -10,6 +10,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -109,5 +110,35 @@ public class PlayerServiceTest {
         assertThatThrownBy(() -> playerService.delete(id))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("경기 기록이 있는");
+    }
+
+    @Test
+    void 여러_명을_한_번에_수정한다(){
+        Long a = playerService.register("철수", "철수#KR1", Position.MID, null, null);
+        Long b = playerService.register("영희", "영희#KR1", Position.TOP, null, null);
+
+        playerService.updateAll(List.of(
+                new PlayerUpdate(a, "철수", "철수#KR1", Position.MID, Position.TOP, Tier.DIAMOND),
+                new PlayerUpdate(b, "영희2", "영희#KR2", Position.JUNGLE, null, Tier.SILVER)));
+
+        assertThat(playerService.findById(a).getTier()).isEqualTo(Tier.DIAMOND);
+        assertThat(playerService.findById(a).getSubPosition()).isEqualTo(Position.TOP);
+        assertThat(playerService.findById(b).getName()).isEqualTo("영희2");
+        assertThat(playerService.findById(b).getRiotId()).isEqualTo("영희#KR2");
+        assertThat(playerService.findById(b).getTier()).isEqualTo(Tier.SILVER);
+    }
+
+    @Test
+    void 여러_명_수정에서_같은_라이엇ID가_두_줄에_있으면_아무것도_바꾸지_않는다(){
+        Long a = playerService.register("철수", "철수#KR1", Position.MID, null, null);
+        Long b = playerService.register("영희", "영희#KR1", Position.TOP, null, null);
+
+        assertThatThrownBy(() -> playerService.updateAll(List.of(
+                new PlayerUpdate(a, "철수2", "같은#KR1", Position.MID, null, Tier.GOLD),
+                new PlayerUpdate(b, "영희", " 같은#KR1 ", Position.TOP, null, Tier.GOLD))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("두 줄");
+
+        assertThat(playerService.findById(a).getName()).isEqualTo("철수");
     }
 }
