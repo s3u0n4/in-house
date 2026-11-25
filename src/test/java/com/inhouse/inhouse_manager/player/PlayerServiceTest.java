@@ -101,15 +101,35 @@ public class PlayerServiceTest {
     }
 
     @Test
-    void 경기_기록이_있는_플레이어는_삭제할_수_없다(){
+    void 경기_기록이_있는_플레이어를_삭제하면_목록에서만_빠지고_기록은_남는다(){
         Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
         Match match = new Match(LocalDate.now(), Team.BLUE);
         match.addParticipant(playerService.findById(id), Team.BLUE, Position.MID);
         matchRepository.save(match);
 
-        assertThatThrownBy(() -> playerService.delete(id))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("경기 기록이 있는");
+        boolean keptRecords = playerService.delete(id);
+
+        assertThat(keptRecords).isTrue();
+        assertThat(playerService.findById(id).isDeleted()).isTrue();
+        assertThat(playerService.findById(id).getDisplayName()).isEqualTo("철수 (삭제됨)");
+        assertThat(playerService.findAll()).extracting(Player::getId).doesNotContain(id);
+        assertThat(playerService.findAllOrderByName()).extracting(Player::getId).doesNotContain(id);
+        assertThat(matchRepository.findWithParticipantsById(match.getId()).orElseThrow().getParticipants()).hasSize(1);
+        assertThatThrownBy(() -> playerService.findActiveById(id)).isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void 삭제된_플레이어의_라이엇ID로_다시_등록할_수_있다(){
+        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
+        Match match = new Match(LocalDate.now(), Team.BLUE);
+        match.addParticipant(playerService.findById(id), Team.BLUE, Position.MID);
+        matchRepository.save(match);
+        playerService.delete(id);
+
+        Long again = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
+
+        assertThat(again).isNotEqualTo(id);
+        assertThat(playerService.findById(again).getRiotId()).isEqualTo("철수#KR1");
     }
 
     @Test
@@ -155,19 +175,18 @@ public class PlayerServiceTest {
     }
 
     @Test
-    void 목록_저장에서_경기_기록이_있는_플레이어를_지우려_하면_아무것도_바꾸지_않는다(){
+    void 목록_저장에서_경기_기록이_있는_플레이어는_기록을_남기고_삭제한다(){
         Long a = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
         Long b = playerService.register("영희", "영희#KR1", Position.TOP, null, Tier.GOLD);
         Match match = new Match(LocalDate.now(), Team.BLUE);
         match.addParticipant(playerService.findById(a), Team.BLUE, Position.MID);
         matchRepository.save(match);
 
-        assertThatThrownBy(() -> playerService.saveAll(
-                List.of(new PlayerUpdate(b, "영희2", "영희#KR1", Position.TOP, null, Tier.GOLD)), List.of(a)))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("철수");
+        playerService.saveAll(List.of(new PlayerUpdate(b, "영희2", "철수#KR1", Position.TOP, null, Tier.GOLD)), List.of(a));
 
-        assertThat(playerService.findById(b).getName()).isEqualTo("영희");
+        assertThat(playerService.findById(a).isDeleted()).isTrue();
+        assertThat(playerService.findById(b).getName()).isEqualTo("영희2");
+        assertThat(playerService.findById(b).getRiotId()).isEqualTo("철수#KR1");
         assertThat(playerService.idsWithMatches()).containsExactly(a);
     }
 }

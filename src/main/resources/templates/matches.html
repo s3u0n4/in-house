@@ -22,9 +22,9 @@
             <tr th:each="match : ${matches}">
                 <td th:text="${match.playedAt}">2026-11-24</td>
                 <td th:text="${match.winner.label}" th:class="${match.winner.name() == 'BLUE'} ? 'team-blue' : 'team-red'">블루</td>
-                <!-- .![player.name]: 리스트의 각 원소에서 player.name만 뽑는다 (SpEL 프로젝션) -->
-                <td class="wrap" th:text="${#strings.listJoin(match.blueTeam.![player.name], ', ')}">철수, 영희</td>
-                <td class="wrap" th:text="${#strings.listJoin(match.redTeam.![player.name], ', ')}">지훈, 수빈</td>
+                <!-- .![player.displayName]: 리스트의 각 원소에서 이름만 뽑는다 (SpEL 프로젝션). 삭제된 사람은 "(삭제됨)"이 붙는다 -->
+                <td class="wrap" th:text="${#strings.listJoin(match.blueTeam.![player.displayName], ', ')}">철수, 영희</td>
+                <td class="wrap" th:text="${#strings.listJoin(match.redTeam.![player.displayName], ', ')}">지훈, 수빈</td>
                 <td><a th:href="@{/matches/{id}(id=${match.id})}">보기</a></td>
             </tr>
             <tr th:if="${#lists.isEmpty(matches)}">

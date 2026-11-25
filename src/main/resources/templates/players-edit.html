@@ -14,7 +14,7 @@
             <div>
                 <h1>플레이어 목록 수정</h1>
                 <p class="sub">칸을 고친 뒤 저장을 누르면 한 번에 반영됩니다. 하나라도 잘못되면 아무것도 저장되지 않아요.<br>
-                    지울 플레이어는 맨 오른쪽 <strong>삭제</strong>를 체크하세요. 경기 기록이 있는 플레이어는 삭제할 수 없어요.</p>
+                    지울 플레이어는 맨 오른쪽 <strong>삭제</strong>를 체크하세요. 경기 기록이 있는 플레이어는 목록에서만 빠지고 지난 경기 기록에는 "(삭제됨)"으로 남아요.</p>
             </div>
             <div class="actions">
                 <button class="btn primary" type="submit">저장</button>
@@ -70,13 +70,15 @@
                             <option th:each="pos : ${positions}" th:value="${pos}" th:text="${pos}">TOP</option>
                         </select>
                     </td>
-                    <td class="delete-cell" th:with="locked=${#sets.contains(idsWithMatches, row.id)}">
-                        <!-- 경기 기록이 있으면 체크할 수 없게 막는다 (서버에서도 한 번 더 검사) -->
-                        <label class="delete-label" th:title="${locked} ? '경기 기록이 있어 삭제할 수 없어요' : '저장할 때 삭제'">
+                    <td class="delete-cell" th:with="hasMatches=${#sets.contains(idsWithMatches, row.id)}">
+                        <!-- 경기 기록이 있는 사람은 지워도 지난 경기 기록에 "(삭제됨)"으로 남는다 -->
+                        <label class="delete-label"
+                               th:title="${hasMatches} ? '목록에서 빠지고, 지난 경기 기록에는 (삭제됨)으로 남아요' : '저장할 때 삭제'">
                             <input type="checkbox" class="delete-check" th:field="*{rows[__${stat.index}__].delete}"
-                                   th:disabled="${locked}" th:attr="aria-label=|${stat.count}번째 삭제|">
-                            <span th:text="${locked} ? '기록 있음' : '삭제'">삭제</span>
+                                   th:attr="aria-label=|${stat.count}번째 삭제|, data-has-matches=${hasMatches}">
+                            <span>삭제</span>
                         </label>
+                        <small class="delete-note" th:if="${hasMatches}">기록은 남아요</small>
                         <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].delete')}"
                            th:errors="*{rows[__${stat.index}__].delete}">삭제 오류</p>
                     </td>
@@ -99,7 +101,9 @@
     // 삭제를 체크한 줄이 있으면 저장 전에 한 번 더 묻는다
     document.getElementById('players-edit-form').addEventListener('submit', function (event) {
         var count = document.querySelectorAll('.delete-check:checked').length;
-        if (count > 0 && !confirm(count + '명을 삭제할까요? 삭제하면 되돌릴 수 없어요.')) {
+        var kept = document.querySelectorAll('.delete-check:checked[data-has-matches=true]').length;
+        var note = kept > 0 ? '\n(그중 ' + kept + '명은 경기 기록이 있어서 지난 경기에 이름이 남아요)' : '';
+        if (count > 0 && !confirm(count + '명을 삭제할까요? 되돌릴 수 없어요.' + note)) {
             event.preventDefault();
         }
     });

@@ -32,7 +32,7 @@ src/main/java/com/inhouse/inhouse_manager/
  │   └─ NotFoundException.java   @ResponseStatus(404). 없는 id 조회 시 → templates/error/404.html
  ├─ player/
  │   ├─ Player.java, Position.java, Tier.java(아이언 1 ~ 챌린저 10, 언랭 null), PlayerRepository.java
- │   ├─ PlayerService.java       등록/수정/삭제(경기 기록 있으면 불가)/조회
+ │   ├─ PlayerService.java       등록/수정/삭제/조회. 삭제: 기록 없으면 DB 삭제, 있으면 소프트 삭제(deletedAt)
  │   ├─ PlayerController.java    /players, /players/new, /players/edit(목록 수정), /players/{id}, /players/{id}/edit, /players/{id}/delete
  │   ├─ PlayerForm.java          등록·수정 폼 + 검증
  │   ├─ PlayerListForm.java      목록 수정 폼 (Row extends PlayerForm + id, @Valid 리스트)
@@ -70,7 +70,8 @@ src/test/java/com/inhouse/inhouse_manager/
 - 엔티티: `@Getter`, `@NoArgsConstructor(access = AccessLevel.PROTECTED)`, `@Setter`/`@Data` 사용 안 함, enum 필드에는 `@Enumerated(EnumType.STRING)`. 값 변경은 `update(...)` 같은 의미 있는 메서드로 (변경 감지).
 - 폼 객체는 `@Getter @Setter` 사용 가능 (엔티티가 아니므로).
 - 의존성 주입은 `private final` 필드 + `@RequiredArgsConstructor`.
-- 예외: 입력/업무 규칙 위반은 `IllegalArgumentException`(Controller에서 잡아 `rejectValue`/`reject`), 삭제 불가는 `IllegalStateException`, 없는 id는 `NotFoundException`(404 화면).
+- 예외: 입력/업무 규칙 위반은 `IllegalArgumentException`(Controller에서 잡아 `rejectValue`/`reject`), 없는 id는 `NotFoundException`(404 화면).
+- 플레이어 소프트 삭제: `Player.deletedAt`이 있으면 삭제된 사람. 목록용 조회는 `PlayerService.findAll`/`findAllOrderByName`(삭제 제외), 수정·삭제는 `findActiveById`. 경기 기록 화면은 `player.displayName`("이름 (삭제됨)")을 쓴다. 새 조회를 만들 때 삭제된 사람을 빼야 하는지 꼭 확인할 것.
 - 저장·수정·삭제는 POST + redirect(PRG), 성공 문구는 `RedirectAttributes.addFlashAttribute("message", ...)`, 실패 문구는 `"errorMessage"`.
 - 서비스 테스트는 `@DataJpaTest` + `@Import(...)`, AssertJ는 `org.assertj.core.api.Assertions`. 테스트 메서드 이름은 한글.
 - Thymeleaf에서 record 값은 `${s.games()}`처럼 메서드 호출로 쓴다.
@@ -97,6 +98,7 @@ src/test/java/com/inhouse/inhouse_manager/
 > - 2026-11-25: 사용자 요청("2명씩이 아니라 5명 다 바꾸는데 바뀐 사람만 표시")으로 랜덤 교체 대상을 5개 라인 전체로 넓혔다(1~2쌍 → 1~4쌍, 30가지 조합). 균형 필터는 유지했다.
 > - 2026-11-25: 플레이어 "목록 수정" 화면 추가 (여러 명을 표에서 한 번에 수정, 오류면 전부 저장 안 함). 처음 방문 때 주소에 `;jsessionid`가 붙어서 `server.servlet.session.tracking-modes=cookie` 설정을 추가했다. 테스트 37개.
 > - 2026-11-25: 목록 수정에 삭제 체크칸 추가 (`PlayerService.saveAll`, 삭제할 줄은 검사 건너뜀 → 컨트롤러에서 `jakarta.validation.Validator`로 줄마다 직접 검사). 팀 나누기 참가자 선택을 카드 드래그 방식으로 바꿨다. 브라우저 기본 드래그(HTML5 DnD)는 터치에서 안 되고 자동화 시험도 불안정해서 Pointer 이벤트로 직접 구현했고, 휴대폰은 탭으로 고른다. agent-browser의 `mouse`/`drag --human` 좌표는 화면 좌표와 어긋나므로, 드래그 시험은 페이지 안에서 PointerEvent를 만들어 했다. 테스트 39개.
+> - 2026-11-25: 사용자 요청으로 경기 기록이 있는 플레이어도 삭제 가능하게 바꿨다. 다른 사람의 경기 기록과 전적을 지키려고 소프트 삭제(`deletedAt`, 라이엇 ID는 `deleted:{id}:{원래}`로 바꿔 재등록 가능)로 구현했다. 테스트 41개.
 > **현재 위치 (2026-11-25):** 요구사항명세서의 필수 기능과 권장 기능을 모두 구현했다. 사용자가 8081 서버를 재시작했고, 모든 화면이 정상 응답하는 것을 확인했다(경기 테이블 자동 생성, 404 화면 포함). 사용자의 요청으로 테스트용 플레이어 8명(`테스트탑1`~`테스트서폿2`, 라이엇 ID는 `#TEST`로 끝남)을 사용자 DB에 등록했다. 총 10명이다. 사용자가 팀 나누기 → 경기 기록으로 첫 경기(match id 1, 2026-11-25, 블루 승)를 기록했고, 목록, 상세, 전적이 모두 맞게 반영된 것을 확인했다. 이제 테스트 플레이어를 지우려면 경기부터 삭제해야 한다.
 
 후보 (요구사항명세서 1.3 "제외" 항목):

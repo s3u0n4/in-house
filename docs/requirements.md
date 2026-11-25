@@ -48,9 +48,9 @@
 | PLR-04 | 플레이어 목록에서 이름, 라이엇 ID, 포지션, 경기 수, 승, 패, 승률을 보여준다. | 필수 | S02 |
 | PLR-05 | 플레이어 상세에서 기본 정보, 전체 전적, 포지션별 전적, 최근 경기 10개를 보여준다. | 필수 | S04 |
 | PLR-06 | 플레이어 정보를 수정한다. 다른 플레이어가 쓰는 라이엇 ID로는 바꿀 수 없다. | 필수 | S05 |
-| PLR-10 | 목록 수정에서 줄마다 "삭제"를 체크하면 저장할 때 함께 삭제한다. 경기 기록이 있는 플레이어는 체크할 수 없고, 삭제할 줄은 입력값 검사를 하지 않는다 (티어가 비어 있는 옛 플레이어도 지울 수 있게). (2026-11-25 추가) | 권장 | S11 |
+| PLR-10 | 목록 수정에서 줄마다 "삭제"를 체크하면 저장할 때 함께 삭제한다 (PLR-07 규칙). 삭제할 줄은 입력값 검사를 하지 않는다 (티어가 비어 있는 옛 플레이어도 지울 수 있게). (2026-11-25 추가) | 권장 | S11 |
 | PLR-09 | 플레이어 목록에서 "목록 수정"을 누르면 모든 플레이어의 이름, 라이엇 ID, 티어, 주·부 포지션을 표 하나에서 고치고 한 번에 저장한다. 하나라도 잘못되면 아무것도 저장하지 않고, 잘못된 칸 아래에 안내를 보여준다. (2026-11-25 추가) | 권장 | S11 |
-| PLR-07 | 플레이어를 삭제한다. 경기 기록이 하나라도 있으면 삭제할 수 없고, 이유를 보여준다. | 권장 | S04 |
+| PLR-07 | 플레이어를 삭제한다. 경기 기록이 없으면 DB에서 지우고, 경기 기록이 있으면 목록·팀 나누기·경기 기록 선택지에서만 빼고 지난 경기 기록에는 "이름 (삭제됨)"으로 남긴다. 삭제된 사람의 라이엇 ID는 다시 등록할 수 있다. (2026-11-25 변경: 원래는 기록이 있으면 삭제 불가) | 권장 | S04, S11 |
 
 ### 2.2 경기 (MAT)
 | ID | 요구사항 | 우선순위 | 화면 |
@@ -134,6 +134,6 @@ Player 1 ──── N MatchParticipant N ──── 1 Match
 
 | 엔티티 | 필드 | 제약 |
 |---|---|---|
-| Player | id, name, riotId, mainPosition, subPosition, tier | riotId unique, name/riotId/mainPosition not null (tier는 예전 데이터 때문에 null 허용) |
+| Player | id, name, riotId, mainPosition, subPosition, tier, deletedAt | riotId unique, name/riotId/mainPosition not null (tier는 예전 데이터 때문에 null 허용). deletedAt이 있으면 삭제된 플레이어 (riotId는 `deleted:{id}:{원래 ID}`로 바꿔 둔다) |
 | Match (테이블 `matches`) | id, playedAt(날짜), winner(BLUE/RED) | 모두 not null |
 | MatchParticipant | id, match, player, team(BLUE/RED), position | 모두 not null |

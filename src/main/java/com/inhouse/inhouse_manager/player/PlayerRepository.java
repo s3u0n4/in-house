@@ -12,5 +12,8 @@ public interface PlayerRepository extends JpaRepository<Player,Long> {
 
     boolean existsByRiotIdAndIdNot(String riotId, Long id);
 
-    List<Player> findAllByOrderByNameAsc();
+    // DeletedAtIsNull: 삭제되지 않은 플레이어만
+    List<Player> findAllByDeletedAtIsNull();
+
+    List<Player> findAllByDeletedAtIsNullOrderByNameAsc();
 }

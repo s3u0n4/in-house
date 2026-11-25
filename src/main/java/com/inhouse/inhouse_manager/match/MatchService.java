@@ -36,7 +36,9 @@ public class MatchService {
         }
 
         List<Long> allIds = Stream.concat(bluePlayerIds.stream(), redPlayerIds.stream()).toList();
+        // 삭제된 플레이어는 새 경기에 넣을 수 없다
         Map<Long, Player> players = playerRepository.findAllById(allIds).stream()
+                .filter(player -> !player.isDeleted())
                 .collect(Collectors.toMap(Player::getId, Function.identity()));
         if (!players.keySet().containsAll(allIds)) {
             throw new IllegalArgumentException("존재하지 않는 플레이어가 있습니다.");

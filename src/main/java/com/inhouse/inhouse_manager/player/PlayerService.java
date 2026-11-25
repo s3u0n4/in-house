@@ -29,7 +29,7 @@ public class PlayerService {
 
     @Transactional
     public void update(Long id, String name, String riotId, Position mainPosition, Position subPosition, Tier tier) {
-        Player player = findById(id);
+        Player player = findActiveById(id);
         String trimmedRiotId = riotId.strip();
         if (playerRepository.existsByRiotIdAndIdNot(trimmedRiotId, id)) {
             throw new IllegalArgumentException("이미 등록된 라이엇 ID입니다: " + trimmedRiotId);
@@ -51,14 +51,6 @@ public class PlayerService {
      */
     @Transactional
     public void saveAll(List<PlayerUpdate> updates, List<Long> deleteIds) {
-        List<String> blocked = deleteIds.stream()
-                .filter(matchParticipantRepository::existsByPlayerId)
-                .map(id -> findById(id).getName())
-                .toList();
-        if (!blocked.isEmpty()) {
-            throw new IllegalStateException("경기 기록이 있는 플레이어는 삭제할 수 없습니다: " + String.join(", ", blocked));
-        }
-
         Set<String> riotIds = new HashSet<>();
         for (PlayerUpdate update : updates) {
             String trimmedRiotId = update.riotId().strip();
@@ -67,7 +59,7 @@ public class PlayerService {
             }
         }
         for (Long id : deleteIds) {
-            playerRepository.delete(findById(id));
+            delete(id);
         }
         // 삭제를 먼저 DB에 반영해 둔다. 그래야 지운 사람의 라이엇 ID를 다른 줄이 바로 쓸 수 있다
         playerRepository.flush();
@@ -76,26 +68,46 @@ public class PlayerService {
         }
     }
 
-    /** 경기 기록이 있어서 삭제할 수 없는 플레이어 id */
+    /** 경기 기록이 있는 플레이어 id (삭제하면 기록은 남기고 목록에서만 빠지는 사람들) */
     public Set<Long> idsWithMatches() {
         return new HashSet<>(matchParticipantRepository.findPlayerIdsWithMatches());
     }
 
+    /**
+     * 플레이어를 삭제한다.
+     * 경기 기록이 없으면 DB에서 지우고, 있으면 다른 사람들의 경기 기록과 전적이 망가지지 않도록
+     * "삭제됨" 표시만 한다 (목록, 팀 나누기, 경기 기록 선택지에서는 빠진다).
+     *
+     * @return 경기 기록이 있어서 기록을 남겨 둔 경우 true
+     */
     @Transactional
-    public void delete(Long id) {
-        Player player = findById(id);
+    public boolean delete(Long id) {
+        Player player = findActiveById(id);
         if (matchParticipantRepository.existsByPlayerId(id)) {
-            throw new IllegalStateException("경기 기록이 있는 플레이어는 삭제할 수 없습니다.");
+            player.markDeleted();
+            return true;
         }
         playerRepository.delete(player);
+        return false;
     }
 
+    /** 삭제되지 않은 플레이어 (등록 순) */
     public List<Player> findAll(){
-        return playerRepository.findAll();
+        return playerRepository.findAllByDeletedAtIsNull();
     }
 
+    /** 삭제되지 않은 플레이어 (이름 순) */
     public List<Player> findAllOrderByName() {
-        return playerRepository.findAllByOrderByNameAsc();
+        return playerRepository.findAllByDeletedAtIsNullOrderByNameAsc();
+    }
+
+    /** 수정, 삭제할 수 있는 플레이어. 이미 삭제된 플레이어는 없는 것으로 본다 */
+    public Player findActiveById(Long id) {
+        Player player = findById(id);
+        if (player.isDeleted()) {
+            throw new NotFoundException("삭제된 플레이어입니다: " + id);
+        }
+        return player;
     }
 
     public Player findById(Long id){

@@ -17,7 +17,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Controller
 @RequiredArgsConstructor
@@ -47,16 +46,12 @@ public class PlayerController {
     public String editAll(@ModelAttribute PlayerListForm playerListForm, BindingResult bindingResult,
                           Model model, RedirectAttributes redirectAttributes) {
         List<PlayerListForm.Row> rows = playerListForm.getRows();
-        Set<Long> idsWithMatches = playerService.idsWithMatches();
 
         // 1) 삭제하지 않는 줄만 입력값 검사 (PlayerForm의 @NotBlank, @NotNull 등)
         //    삭제할 줄까지 검사하면, 티어가 비어 있는 옛 플레이어를 지울 때도 "티어를 선택하세요"에 막힌다
         for (int i = 0; i < rows.size(); i++) {
             PlayerListForm.Row row = rows.get(i);
             if (row.isDelete()) {
-                if (idsWithMatches.contains(row.getId())) {
-                    bindingResult.rejectValue("rows[" + i + "].delete", "hasMatches", "경기 기록이 있어 삭제할 수 없습니다.");
-                }
                 continue;
             }
             for (ConstraintViolation<PlayerListForm.Row> violation : validator.validate(row)) {
@@ -88,8 +83,8 @@ public class PlayerController {
         List<Long> deleteIds = rows.stream().filter(PlayerListForm.Row::isDelete).map(PlayerListForm.Row::getId).toList();
         try {
             playerService.saveAll(updates, deleteIds);
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            // 목록에 없는 플레이어(예: 그사이 새로 등록된 사람)와 라이엇 ID가 겹치거나, 그사이 경기 기록이 생긴 경우
+        } catch (IllegalArgumentException e) {
+            // 목록에 없는 플레이어(예: 그사이 새로 등록된 사람)와 라이엇 ID가 겹치는 경우
             bindingResult.reject("saveFailed", e.getMessage());
             addFormOptions(model, null);
             return "players-edit";
@@ -143,7 +138,7 @@ public class PlayerController {
 
     @GetMapping("/players/{id}/edit")
     public String editForm(@PathVariable Long id, Model model) {
-        model.addAttribute("playerForm", PlayerForm.from(playerService.findById(id)));
+        model.addAttribute("playerForm", PlayerForm.from(playerService.findActiveById(id)));
         addFormOptions(model, id);
         return "player-form";
     }
@@ -174,13 +169,10 @@ public class PlayerController {
 
     @PostMapping("/players/{id}/delete")
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        try {
-            playerService.delete(id);
-        } catch (IllegalStateException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-            return "redirect:/players/" + id;
-        }
-        redirectAttributes.addFlashAttribute("message", "플레이어를 삭제했습니다.");
+        boolean keptRecords = playerService.delete(id);
+        redirectAttributes.addFlashAttribute("message", keptRecords
+                ? "플레이어를 삭제했습니다. 지난 경기 기록에는 \"(삭제됨)\"으로 남아 있어요."
+                : "플레이어를 삭제했습니다.");
         return "redirect:/players";
     }
 

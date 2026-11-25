@@ -28,8 +28,8 @@
             </h3>
             <div class="slot" th:each="p : ${members}">
                 <span class="slot-pos" th:text="${p.position}">TOP</span>
-                <a th:href="@{/players/{id}(id=${p.player.id})}" th:text="${p.player.name}">철수</a>
-                <span class="muted" th:text="${p.player.riotId}">철수#KR1</span>
+                <a th:href="@{/players/{id}(id=${p.player.id})}" th:text="${p.player.displayName}">철수</a>
+                <span class="muted" th:text="${p.player.deleted} ? '' : ${p.player.riotId}">철수#KR1</span>
             </div>
         </section>
     </div>

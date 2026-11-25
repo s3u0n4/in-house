@@ -260,7 +260,7 @@ body:has(.drag-ghost) { cursor: grabbing; user-select: none; }
 .bottom-actions { margin-top: 16px; }
 .delete-cell { white-space: nowrap; }
 .delete-label { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; cursor: pointer; color: var(--muted); font-size: 13px; }
-.delete-label:has(input:disabled) { cursor: not-allowed; color: var(--dim); }
+.delete-note { display: block; font-size: 11px; color: var(--dim); margin-top: -6px; }
 .delete-label:has(input:checked) { color: var(--red-text); font-weight: 700; }
 /* 삭제로 체크한 줄은 흐리게 하고 이름과 라이엇 ID에 줄을 긋는다 */
 .edit-table tr:has(.delete-check:checked) { background: rgba(255, 51, 85, .10); }

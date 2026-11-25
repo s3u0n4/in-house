@@ -103,4 +103,14 @@ class MatchServiceTest {
         assertThatThrownBy(() -> matchService.findById(matchId)).isInstanceOf(NotFoundException.class);
         assertThat(matchParticipantRepository.count()).isZero();
     }
+
+    @Test
+    void 삭제된_플레이어는_새_경기에_넣을_수_없다() {
+        Player deleted = playerRepository.findById(blueIds.get(0)).orElseThrow();
+        deleted.markDeleted();
+
+        assertThatThrownBy(() -> matchService.record(LocalDate.now(), Team.BLUE, blueIds, redIds))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("존재하지 않는");
+    }
 }
