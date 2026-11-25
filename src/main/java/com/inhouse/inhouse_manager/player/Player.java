@@ -33,8 +33,8 @@ public class Player {
     private Tier tier;
 
     /**
-     * 경기 기록이 있는 플레이어를 삭제한 시각. 값이 있으면 목록에서는 빠지고 지난 경기 기록에만 남는다 (소프트 삭제).
-     * 경기 기록이 없는 플레이어는 DB에서 바로 지우므로 이 값을 쓰지 않는다.
+     * 삭제한 시각. 값이 있으면 목록에서는 빠지고 지난 경기 기록에만 "(삭제됨)"으로 남는다 (소프트 삭제).
+     * 관리자가 휴지통에서 되돌릴 수 있다.
      */
     private LocalDateTime deletedAt;
 
@@ -58,7 +58,23 @@ public class Player {
     /** 경기 기록은 남기고 목록에서만 뺀다. 라이엇 ID는 다른 사람이 다시 쓸 수 있게 바꿔 둔다 */
     public void markDeleted() {
         this.deletedAt = LocalDateTime.now();
-        this.riotId = "deleted:" + id + ":" + riotId;
+        this.riotId = deletedRiotIdPrefix() + riotId;
+    }
+
+    /** 삭제하기 전의 라이엇 ID (삭제되지 않았으면 지금 라이엇 ID) */
+    public String getOriginalRiotId() {
+        return isDeleted() && riotId.startsWith(deletedRiotIdPrefix())
+                ? riotId.substring(deletedRiotIdPrefix().length()) : riotId;
+    }
+
+    /** 되돌린다. 라이엇 ID도 원래대로 돌린다 (같은 ID를 쓰는 사람이 있는지는 PlayerService가 먼저 확인한다) */
+    public void restore() {
+        this.riotId = getOriginalRiotId();
+        this.deletedAt = null;
+    }
+
+    private String deletedRiotIdPrefix() {
+        return "deleted:" + id + ":";
     }
 
     public void update(String name, String riotId, Position mainPosition, Position subPosition, Tier tier) {

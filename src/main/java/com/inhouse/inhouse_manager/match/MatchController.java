@@ -78,7 +78,7 @@ public class MatchController {
     @PostMapping("/matches/{id}/delete")
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         matchService.delete(id);
-        redirectAttributes.addFlashAttribute("message", "경기를 삭제했습니다.");
+        redirectAttributes.addFlashAttribute("message", "경기를 삭제했습니다. 관리자가 휴지통에서 되돌릴 수 있어요.");
         return "redirect:/matches";
     }
 

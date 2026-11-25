@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -33,9 +34,24 @@ public class Match {
     @OneToMany(mappedBy = "match", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MatchParticipant> participants = new ArrayList<>();
 
+    /** 삭제한 시각. 값이 있으면 목록과 전적 계산에서 빠지고, 관리자가 휴지통에서 되돌릴 수 있다 (소프트 삭제) */
+    private LocalDateTime deletedAt;
+
     public Match(LocalDate playedAt, Team winner) {
         this.playedAt = playedAt;
         this.winner = winner;
+    }
+
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
+    public void markDeleted() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public void restore() {
+        this.deletedAt = null;
     }
 
     public void addParticipant(Player player, Team team, Position position) {

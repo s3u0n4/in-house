@@ -1,0 +1,72 @@
+<!doctype html>
+<!-- 관리자 전용 휴지통: 삭제한 플레이어와 경기 기록을 되돌린다 -->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('휴지통')}">
+    <meta charset="UTF-8">
+    <title>휴지통</title>
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: header('trash')}"></th:block>
+
+<main class="container">
+    <div class="page-head">
+        <div>
+            <h1>휴지통</h1>
+            <p class="sub">삭제한 플레이어와 경기 기록이에요. 되돌리면 목록과 전적에 다시 나타나요.</p>
+        </div>
+    </div>
+
+    <h2>삭제한 플레이어 <span class="muted" th:text="|${#lists.size(deletedPlayers)}명|">0명</span></h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+            <tr><th>이름</th><th>라이엇 ID</th><th>티어</th><th>주 포지션</th><th>삭제한 시각</th><th></th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="player : ${deletedPlayers}">
+                <td><a th:href="@{/players/{id}(id=${player.id})}" th:text="${player.name}">철수</a></td>
+                <td th:text="${player.originalRiotId}">철수#KR1</td>
+                <td><span class="tier" th:classappend="|tier-${player.tier}|" th:text="${player.tier?.label} ?: '-'">골드</span></td>
+                <td th:text="${player.mainPosition}">MID</td>
+                <td th:text="${#temporals.format(player.deletedAt, 'yyyy-MM-dd HH:mm')}">2026-11-25 20:00</td>
+                <td>
+                    <form th:action="@{/admin/players/{id}/restore(id=${player.id})}" method="post">
+                        <button class="btn small" type="submit">되돌리기</button>
+                    </form>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(deletedPlayers)}">
+                <td class="empty" colspan="6">삭제한 플레이어가 없습니다.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>삭제한 경기 기록 <span class="muted" th:text="|${#lists.size(deletedMatches)}경기|">0경기</span></h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+            <tr><th>경기 날짜</th><th>승리</th><th>블루팀</th><th>레드팀</th><th>삭제한 시각</th><th></th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="match : ${deletedMatches}">
+                <td th:text="${match.playedAt}">2026-11-24</td>
+                <td th:text="${match.winner.label}" th:class="${match.winner.name() == 'BLUE'} ? 'team-blue' : 'team-red'">블루</td>
+                <td class="wrap" th:text="${#strings.listJoin(match.blueTeam.![player.displayName], ', ')}">철수, 영희</td>
+                <td class="wrap" th:text="${#strings.listJoin(match.redTeam.![player.displayName], ', ')}">지훈, 수빈</td>
+                <td th:text="${#temporals.format(match.deletedAt, 'yyyy-MM-dd HH:mm')}">2026-11-25 20:00</td>
+                <td>
+                    <form th:action="@{/admin/matches/{id}/restore(id=${match.id})}" method="post">
+                        <button class="btn small" type="submit">되돌리기</button>
+                    </form>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(deletedMatches)}">
+                <td class="empty" colspan="6">삭제한 경기 기록이 없습니다.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+</body>
+</html>

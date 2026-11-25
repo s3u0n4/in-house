@@ -1,7 +1,6 @@
 package com.inhouse.inhouse_manager.player;
 
 import com.inhouse.inhouse_manager.common.NotFoundException;
-import com.inhouse.inhouse_manager.match.MatchParticipantRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,7 +14,6 @@ import java.util.Set;
 @Transactional(readOnly = true)
 public class PlayerService {
     private final PlayerRepository playerRepository;
-    private final MatchParticipantRepository matchParticipantRepository;
 
     @Transactional
     public Long register(String name, String riotId, Position mainPosition, Position subPosition, Tier tier) {
@@ -68,27 +66,34 @@ public class PlayerService {
         }
     }
 
-    /** 경기 기록이 있는 플레이어 id (삭제하면 기록은 남기고 목록에서만 빠지는 사람들) */
-    public Set<Long> idsWithMatches() {
-        return new HashSet<>(matchParticipantRepository.findPlayerIdsWithMatches());
-    }
-
     /**
-     * 플레이어를 삭제한다.
-     * 경기 기록이 없으면 DB에서 지우고, 있으면 다른 사람들의 경기 기록과 전적이 망가지지 않도록
-     * "삭제됨" 표시만 한다 (목록, 팀 나누기, 경기 기록 선택지에서는 빠진다).
-     *
-     * @return 경기 기록이 있어서 기록을 남겨 둔 경우 true
+     * 플레이어를 삭제한다. DB에서 지우지 않고 "삭제됨" 표시만 한다.
+     * 목록, 팀 나누기, 경기 기록 선택지에서는 빠지고, 지난 경기 기록에는 "(삭제됨)"으로 남는다.
+     * 관리자가 휴지통에서 되돌릴 수 있다.
      */
     @Transactional
-    public boolean delete(Long id) {
-        Player player = findActiveById(id);
-        if (matchParticipantRepository.existsByPlayerId(id)) {
-            player.markDeleted();
-            return true;
+    public void delete(Long id) {
+        findActiveById(id).markDeleted();
+    }
+
+    /** 휴지통에 있는 플레이어 */
+    public List<Player> findDeleted() {
+        return playerRepository.findAllByDeletedAtIsNotNullOrderByDeletedAtDesc();
+    }
+
+    /** 관리자 전용: 삭제한 플레이어를 되돌린다. 그사이 같은 라이엇 ID로 등록한 사람이 있으면 되돌릴 수 없다 */
+    @Transactional
+    public void restore(Long id) {
+        Player player = findById(id);
+        if (!player.isDeleted()) {
+            throw new NotFoundException("휴지통에 없는 플레이어입니다: " + id);
         }
-        playerRepository.delete(player);
-        return false;
+        String originalRiotId = player.getOriginalRiotId();
+        if (playerRepository.existsByRiotId(originalRiotId)) {
+            throw new IllegalStateException(player.getName() + " 님을 되돌릴 수 없습니다. 라이엇 ID " + originalRiotId
+                    + "를 쓰는 플레이어가 이미 있어요. 그 플레이어의 라이엇 ID를 먼저 바꿔 주세요.");
+        }
+        player.restore();
     }
 
     /** 삭제되지 않은 플레이어 (등록 순) */

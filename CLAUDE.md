@@ -11,13 +11,15 @@ League of Legends 내전(커스텀 게임) 참가자, 팀 나누기, 경기 결�
 - **커밋하면 바로 GitHub에 푸시한다** (2026-11-25 사용자 요청: "깃헙 푸쉬도 자동으로 해줘"). 원격은 `origin` = `https://github.com/s3u0n4/in-house.git`, 브랜치는 `main`. 푸시가 실패하면 강제 푸시하지 말고 사용자에게 알린다.
 - 사용자는 Spring 입문자다. 무엇을 만들었는지, 새로 나온 개념(어노테이션 등)이 무엇인지, 어떻게 확인하는지를 쉬운 한국어로 요약해서 알려준다.
 - 이 `CLAUDE.md`의 "진행 상황"과 "다음 할 일"을 항상 최신으로 갱신한다.
+- 시큐리티 때문에 curl로 POST 하면 403이 난다. 확인용 POST는 브라우저에서 하거나, 페이지 안에서 `input[name=_csrf]` 값을 꺼내 fetch로 보낸다.
 - 테스트나 확인용 서버는 사용자의 파일 DB를 건드리지 않게 메모리 DB로 띄운다 (예: `./gradlew bootRun --args='--server.port=8082 --spring.datasource.url=jdbc:h2:mem:smoke'`). 사용자는 보통 IntelliJ에서 8081 서버를 켜 두고 있다.
 
 ## 기술 스택
 - Java 21, Spring Boot 4.1.2, Gradle
 - Spring Web MVC, Spring Data JPA, Validation, Lombok, Thymeleaf
 - H2 파일 DB: `./data/inhouse` (`data/`는 gitignore 대상)
-- 서버 포트 8081, H2 콘솔 `http://localhost:8081/h2-console` (JDBC URL `jdbc:h2:file:./data/inhouse`, user `sa`, 비밀번호 없음)
+- 스프링 시큐리티 (2026-11-25): 관리자 계정 1개. 아이디/비밀번호는 `config/application.properties`(gitignore, 스프링 부트가 자동으로 읽음)의 `inhouse.admin.username`/`inhouse.admin.password`. **GitHub 저장소가 public이므로 비밀번호를 커밋하지 말 것.** `/admin/**`와 H2 콘솔만 관리자 전용, 나머지는 누구나. 모든 POST에 CSRF 토큰 필요(`th:action`이 자동으로 넣음)
+- 서버 포트 8081, H2 콘솔 `http://localhost:8081/h2-console` (관리자 로그인 필요. JDBC URL `jdbc:h2:file:./data/inhouse`, user `sa`, 비밀번호 없음)
 - Spring Boot 4라서 예전 자료와 import 경로가 다른 것이 있다. 예: `@DataJpaTest` → `org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest`
 - 화면: Thymeleaf (2026-11-20 결정). 공통 레이아웃은 `templates/fragments/layout.html`(head, header 조각), CSS는 `static/css/style.css` 하나.
 - 디자인: e스포츠 중계 스코어보드 느낌의 어두운 테마 하나만 쓴다 (2026-11-25 확정). 차콜 바탕, 블루/레드 진영 색, 앰버 포인트, 글꼴은 Black Han Sans(한글 제목) + Oswald(숫자, 영문). 색은 `style.css`의 `:root` 변수로 관리한다. 로고나 방송 그래픽은 쓰지 않는다. 자세한 규칙은 화면설계서 3장에 있다.
@@ -28,6 +30,10 @@ League of Legends 내전(커스텀 게임) 참가자, 팀 나누기, 경기 결�
 src/main/java/com/inhouse/inhouse_manager/
  ├─ InhouseManagerApplication.java
  ├─ HomeController.java          GET / → redirect:/players
+ ├─ admin/
+ │   ├─ SecurityConfig.java      시큐리티 설정 + 관리자 계정(InMemoryUserDetailsManager)
+ │   ├─ AdminAdvice.java         모든 화면에 isAdmin 전달
+ │   └─ AdminController.java     GET /login, GET /admin/trash, POST /admin/{players|matches}/{id}/restore
  ├─ common/
  │   └─ NotFoundException.java   @ResponseStatus(404). 없는 id 조회 시 → templates/error/404.html
  ├─ player/
@@ -54,7 +60,7 @@ src/main/java/com/inhouse/inhouse_manager/
      ├─ TeamService.java         id 10개 → 후보 만들기(언랭/미입력 티어는 참가자 평균) → TeamBalancer
      └─ TeamController.java      /teams, /teams/result (GET, shuffle=seed면 5개 라인 각각 교체 여부를 랜덤으로, 1~4쌍 교체)
 src/main/resources/templates/
- ├─ fragments/layout.html, error.html, error/404.html
+ ├─ fragments/layout.html, error.html, error/404.html, login.html, admin-trash.html
  ├─ players.html, players-edit.html(목록 수정), player-form.html(등록·수정 같이 씀), player-detail.html
  ├─ matches.html, match-form.html, match-detail.html
  └─ team-select.html, team-result.html
@@ -71,6 +77,7 @@ src/test/java/com/inhouse/inhouse_manager/
 - 폼 객체는 `@Getter @Setter` 사용 가능 (엔티티가 아니므로).
 - 의존성 주입은 `private final` 필드 + `@RequiredArgsConstructor`.
 - 예외: 입력/업무 규칙 위반은 `IllegalArgumentException`(Controller에서 잡아 `rejectValue`/`reject`), 없는 id는 `NotFoundException`(404 화면).
+- 삭제는 모두 소프트 삭제 (플레이어, 경기 모두 `deletedAt`). 되돌리기는 관리자만 휴지통에서. 경기 조회 쿼리(목록, 상세, 전적)는 `deletedAt is null`을 붙인다.
 - 플레이어 소프트 삭제: `Player.deletedAt`이 있으면 삭제된 사람. 목록용 조회는 `PlayerService.findAll`/`findAllOrderByName`(삭제 제외), 수정·삭제는 `findActiveById`. 경기 기록 화면은 `player.displayName`("이름 (삭제됨)")을 쓴다. 새 조회를 만들 때 삭제된 사람을 빼야 하는지 꼭 확인할 것.
 - 저장·수정·삭제는 POST + redirect(PRG), 성공 문구는 `RedirectAttributes.addFlashAttribute("message", ...)`, 실패 문구는 `"errorMessage"`.
 - 서비스 테스트는 `@DataJpaTest` + `@Import(...)`, AssertJ는 `org.assertj.core.api.Assertions`. 테스트 메서드 이름은 한글.
@@ -99,6 +106,7 @@ src/test/java/com/inhouse/inhouse_manager/
 > - 2026-11-25: 플레이어 "목록 수정" 화면 추가 (여러 명을 표에서 한 번에 수정, 오류면 전부 저장 안 함). 처음 방문 때 주소에 `;jsessionid`가 붙어서 `server.servlet.session.tracking-modes=cookie` 설정을 추가했다. 테스트 37개.
 > - 2026-11-25: 목록 수정에 삭제 체크칸 추가 (`PlayerService.saveAll`, 삭제할 줄은 검사 건너뜀 → 컨트롤러에서 `jakarta.validation.Validator`로 줄마다 직접 검사). 팀 나누기 참가자 선택을 카드 드래그 방식으로 바꿨다. 브라우저 기본 드래그(HTML5 DnD)는 터치에서 안 되고 자동화 시험도 불안정해서 Pointer 이벤트로 직접 구현했고, 휴대폰은 탭으로 고른다. agent-browser의 `mouse`/`drag --human` 좌표는 화면 좌표와 어긋나므로, 드래그 시험은 페이지 안에서 PointerEvent를 만들어 했다. 테스트 39개.
 > - 2026-11-25: 사용자 요청으로 경기 기록이 있는 플레이어도 삭제 가능하게 바꿨다. 다른 사람의 경기 기록과 전적을 지키려고 소프트 삭제(`deletedAt`, 라이엇 ID는 `deleted:{id}:{원래}`로 바꿔 재등록 가능)로 구현했다. 테스트 41개.
+> - 2026-11-25: 경기 기록도 소프트 삭제로 바꾸고, 플레이어 삭제도 전부 소프트 삭제로 통일했다. 스프링 시큐리티로 관리자(사용자 본인) 로그인과 휴지통(되돌리기)을 만들었다. 비밀번호는 `config/application.properties`(gitignore)에 무작위로 만들어 두었다. 사용자는 Gradle 새로고침(시큐리티 의존성) 후 재시작해야 한다. 테스트 47개.
 > **현재 위치 (2026-11-25):** 요구사항명세서의 필수 기능과 권장 기능을 모두 구현했다. 사용자가 8081 서버를 재시작했고, 모든 화면이 정상 응답하는 것을 확인했다(경기 테이블 자동 생성, 404 화면 포함). 사용자의 요청으로 테스트용 플레이어 8명(`테스트탑1`~`테스트서폿2`, 라이엇 ID는 `#TEST`로 끝남)을 사용자 DB에 등록했다. 총 10명이다. 사용자가 팀 나누기 → 경기 기록으로 첫 경기(match id 1, 2026-11-25, 블루 승)를 기록했고, 목록, 상세, 전적이 모두 맞게 반영된 것을 확인했다. 이제 테스트 플레이어를 지우려면 경기부터 삭제해야 한다.
 
 후보 (요구사항명세서 1.3 "제외" 항목):

@@ -92,12 +92,14 @@ public class PlayerServiceTest {
     }
 
     @Test
-    void 경기_기록이_없는_플레이어는_삭제할_수_있다(){
+    void 경기_기록이_없는_플레이어도_삭제_표시만_하고_목록에서_뺀다(){
         Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
 
         playerService.delete(id);
 
-        assertThatThrownBy(() -> playerService.findById(id)).isInstanceOf(NotFoundException.class);
+        assertThat(playerService.findById(id).isDeleted()).isTrue();
+        assertThat(playerService.findAll()).extracting(Player::getId).doesNotContain(id);
+        assertThatThrownBy(() -> playerService.findActiveById(id)).isInstanceOf(NotFoundException.class);
     }
 
     @Test
@@ -107,9 +109,8 @@ public class PlayerServiceTest {
         match.addParticipant(playerService.findById(id), Team.BLUE, Position.MID);
         matchRepository.save(match);
 
-        boolean keptRecords = playerService.delete(id);
+        playerService.delete(id);
 
-        assertThat(keptRecords).isTrue();
         assertThat(playerService.findById(id).isDeleted()).isTrue();
         assertThat(playerService.findById(id).getDisplayName()).isEqualTo("철수 (삭제됨)");
         assertThat(playerService.findAll()).extracting(Player::getId).doesNotContain(id);
@@ -170,7 +171,7 @@ public class PlayerServiceTest {
         // 철수를 지우면서 영희가 철수의 라이엇 ID를 가져간다 → 삭제가 먼저 반영돼야 한다
         playerService.saveAll(List.of(new PlayerUpdate(b, "영희", "철수#KR1", Position.TOP, null, Tier.GOLD)), List.of(a));
 
-        assertThatThrownBy(() -> playerService.findById(a)).isInstanceOf(NotFoundException.class);
+        assertThat(playerService.findById(a).isDeleted()).isTrue();
         assertThat(playerService.findById(b).getRiotId()).isEqualTo("철수#KR1");
     }
 
@@ -187,6 +188,41 @@ public class PlayerServiceTest {
         assertThat(playerService.findById(a).isDeleted()).isTrue();
         assertThat(playerService.findById(b).getName()).isEqualTo("영희2");
         assertThat(playerService.findById(b).getRiotId()).isEqualTo("철수#KR1");
-        assertThat(playerService.idsWithMatches()).containsExactly(a);
+    }
+
+    @Test
+    void 관리자는_삭제한_플레이어를_라이엇ID까지_원래대로_되돌린다(){
+        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
+        playerService.delete(id);
+
+        assertThat(playerService.findDeleted()).extracting(Player::getId).containsExactly(id);
+        assertThat(playerService.findById(id).getOriginalRiotId()).isEqualTo("철수#KR1");
+
+        playerService.restore(id);
+
+        Player restored = playerService.findById(id);
+        assertThat(restored.isDeleted()).isFalse();
+        assertThat(restored.getRiotId()).isEqualTo("철수#KR1");
+        assertThat(playerService.findAll()).extracting(Player::getId).contains(id);
+        assertThat(playerService.findDeleted()).isEmpty();
+    }
+
+    @Test
+    void 그사이_같은_라이엇ID로_등록한_사람이_있으면_되돌리지_않는다(){
+        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
+        playerService.delete(id);
+        playerService.register("새철수", "철수#KR1", Position.TOP, null, Tier.GOLD);
+
+        assertThatThrownBy(() -> playerService.restore(id))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("철수#KR1");
+        assertThat(playerService.findById(id).isDeleted()).isTrue();
+    }
+
+    @Test
+    void 삭제하지_않은_플레이어는_되돌릴_수_없다(){
+        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
+
+        assertThatThrownBy(() -> playerService.restore(id)).isInstanceOf(NotFoundException.class);
     }
 }

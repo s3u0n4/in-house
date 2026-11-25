@@ -41,3 +41,6 @@ data/
 ### Claude Code skills (외부에서 설치, 용량 큼) ###
 .claude/skills/
 skills-lock.json
+
+### 로컬 전용 설정 (관리자 비밀번호 등, 절대 커밋하지 않음) ###
+/config/

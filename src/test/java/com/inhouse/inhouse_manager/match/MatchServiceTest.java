@@ -95,13 +95,33 @@ class MatchServiceTest {
     }
 
     @Test
-    void 경기를_삭제하면_참가_기록도_함께_지워진다() {
+    void 경기를_삭제하면_목록에서_빠지고_참가_기록은_휴지통용으로_남는다() {
         Long matchId = matchService.record(LocalDate.now(), Team.BLUE, blueIds, redIds);
 
         matchService.delete(matchId);
 
         assertThatThrownBy(() -> matchService.findById(matchId)).isInstanceOf(NotFoundException.class);
-        assertThat(matchParticipantRepository.count()).isZero();
+        assertThat(matchService.findAll()).isEmpty();
+        assertThat(matchService.findDeleted()).extracting(Match::getId).containsExactly(matchId);
+        assertThat(matchParticipantRepository.count()).isEqualTo(10);
+    }
+
+    @Test
+    void 관리자는_삭제한_경기를_되돌린다() {
+        Long matchId = matchService.record(LocalDate.now(), Team.BLUE, blueIds, redIds);
+        matchService.delete(matchId);
+
+        matchService.restore(matchId);
+
+        assertThat(matchService.findById(matchId).getParticipants()).hasSize(10);
+        assertThat(matchService.findDeleted()).isEmpty();
+    }
+
+    @Test
+    void 삭제하지_않은_경기는_되돌릴_수_없다() {
+        Long matchId = matchService.record(LocalDate.now(), Team.BLUE, blueIds, redIds);
+
+        assertThatThrownBy(() -> matchService.restore(matchId)).isInstanceOf(NotFoundException.class);
     }
 
     @Test

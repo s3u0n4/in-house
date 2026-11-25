@@ -23,14 +23,14 @@
             <a class="btn" th:href="@{/players/{id}/edit(id=${player.id})}">수정</a>
             <!-- 삭제는 데이터를 바꾸므로 링크(GET)가 아니라 폼(POST)으로 보낸다 -->
             <form th:action="@{/players/{id}/delete(id=${player.id})}" method="post"
-                  th:data-confirm="|${player.name} 플레이어를 삭제할까요? 경기 기록이 있으면 목록에서만 빠지고 지난 경기 기록에는 남아요.|"
+                  th:data-confirm="|${player.name} 플레이어를 삭제할까요? 지난 경기 기록에는 남고, 관리자가 휴지통에서 되돌릴 수 있어요.|"
                   onsubmit="return confirm(this.dataset.confirm)">
                 <button class="btn danger" type="submit">삭제</button>
             </form>
         </div>
     </div>
 
-    <p class="alert error" th:if="${player.deleted}">삭제된 플레이어입니다. 플레이어 목록과 팀 나누기에는 나오지 않고, 지난 경기 기록에만 남아 있어요.</p>
+    <p class="alert error" th:if="${player.deleted}">삭제된 플레이어입니다. 플레이어 목록과 팀 나누기에는 나오지 않고, 지난 경기 기록에만 남아 있어요. 관리자가 휴지통에서 되돌릴 수 있어요.</p>
 
     <div class="card summary" th:with="t=${record.total()}">
         <div><div class="value" th:text="${t.games()}">12</div><div class="label">경기</div></div>

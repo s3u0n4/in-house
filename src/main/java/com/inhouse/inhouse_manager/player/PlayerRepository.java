@@ -16,4 +16,7 @@ public interface PlayerRepository extends JpaRepository<Player,Long> {
     List<Player> findAllByDeletedAtIsNull();
 
     List<Player> findAllByDeletedAtIsNullOrderByNameAsc();
+
+    /** 휴지통: 삭제된 플레이어 (최근에 지운 것부터) */
+    List<Player> findAllByDeletedAtIsNotNullOrderByDeletedAtDesc();
 }

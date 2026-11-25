@@ -69,11 +69,24 @@ public class MatchService {
                 .orElseThrow(() -> new NotFoundException("존재하지 않는 경기입니다: " + id));
     }
 
+    /** 경기를 삭제한다. 실제로 지우지 않고 삭제 표시만 해서, 관리자가 휴지통에서 되돌릴 수 있다 */
     @Transactional
     public void delete(Long id) {
+        findById(id).markDeleted();
+    }
+
+    /** 휴지통에 있는 경기 */
+    public List<Match> findDeleted() {
+        return matchRepository.findDeletedWithParticipants();
+    }
+
+    /** 관리자 전용: 삭제한 경기를 되돌린다 */
+    @Transactional
+    public void restore(Long id) {
         Match match = matchRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 경기입니다: " + id));
-        matchRepository.delete(match);
+                .filter(Match::isDeleted)
+                .orElseThrow(() -> new NotFoundException("휴지통에 없는 경기입니다: " + id));
+        match.restore();
     }
 
     private boolean isFilled(List<Long> playerIds) {

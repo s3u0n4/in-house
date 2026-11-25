@@ -169,10 +169,8 @@ public class PlayerController {
 
     @PostMapping("/players/{id}/delete")
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        boolean keptRecords = playerService.delete(id);
-        redirectAttributes.addFlashAttribute("message", keptRecords
-                ? "플레이어를 삭제했습니다. 지난 경기 기록에는 \"(삭제됨)\"으로 남아 있어요."
-                : "플레이어를 삭제했습니다.");
+        playerService.delete(id);
+        redirectAttributes.addFlashAttribute("message", "플레이어를 삭제했습니다. 관리자가 휴지통에서 되돌릴 수 있어요.");
         return "redirect:/players";
     }
 
@@ -181,6 +179,5 @@ public class PlayerController {
         model.addAttribute("positions", Position.values());
         model.addAttribute("tiers", Tier.values());
         model.addAttribute("playerId", playerId);
-        model.addAttribute("idsWithMatches", playerService.idsWithMatches());
     }
 }

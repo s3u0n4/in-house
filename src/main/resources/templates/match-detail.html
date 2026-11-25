@@ -11,7 +11,7 @@
     <div class="page-head">
         <h1><span th:text="${match.playedAt}">2026-11-24</span> 경기</h1>
         <form th:action="@{/matches/{id}/delete(id=${match.id})}" method="post"
-              onsubmit="return confirm('이 경기 기록을 삭제할까요?')">
+              onsubmit="return confirm('이 경기 기록을 삭제할까요? 관리자가 휴지통에서 되돌릴 수 있어요.')">
             <button class="btn danger" type="submit">삭제</button>
         </form>
     </div>

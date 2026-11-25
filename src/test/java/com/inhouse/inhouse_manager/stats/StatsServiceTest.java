@@ -83,4 +83,17 @@ class StatsServiceTest {
         assertThat(record.recentMatches()).extracting(participant -> participant.getMatch().getPlayedAt())
                 .containsExactly(LocalDate.of(2026, 11, 3), LocalDate.of(2026, 11, 2), LocalDate.of(2026, 11, 1));
     }
+
+    @Test
+    void 삭제한_경기는_전적에서_빠진다() {
+        Long first = matchService.record(LocalDate.of(2026, 11, 1), Team.BLUE, ids.subList(0, 5), ids.subList(5, 10));
+        matchService.record(LocalDate.of(2026, 11, 2), Team.RED, ids.subList(0, 5), ids.subList(5, 10));
+
+        matchService.delete(first);
+
+        PlayerStats stats = statsService.statsByPlayer(ids).get(ids.get(0));
+        assertThat(stats.games()).isEqualTo(1);
+        assertThat(stats.wins()).isZero();
+        assertThat(statsService.recordOf(ids.get(0)).recentMatches()).hasSize(1);
+    }
 }
