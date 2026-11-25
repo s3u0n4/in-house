@@ -11,13 +11,13 @@ import java.net.URI;
 import java.util.Set;
 
 /**
- * 화면 테마(lol, opgg)를 쿠키에 저장한다. 화면에 넘기는 일은 ThemeAdvice가 한다.
+ * 화면 테마(lol, opgg, esports)를 쿠키에 저장한다. 화면에 넘기는 일은 ThemeAdvice가 한다.
  */
 @Controller
 public class ThemeController {
     static final String COOKIE_NAME = "theme";
     static final String DEFAULT_THEME = "lol";
-    static final Set<String> THEMES = Set.of("lol", "opgg");
+    static final Set<String> THEMES = Set.of("lol", "opgg", "esports");
 
     /** 테마를 바꾸고 보고 있던 화면으로 돌아간다 */
     @GetMapping("/theme/{name}")
