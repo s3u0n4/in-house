@@ -20,8 +20,7 @@ League of Legends 내전(커스텀 게임) 참가자, 팀 나누기, 경기 결�
 - 서버 포트 8081, H2 콘솔 `http://localhost:8081/h2-console` (JDBC URL `jdbc:h2:file:./data/inhouse`, user `sa`, 비밀번호 없음)
 - Spring Boot 4라서 예전 자료와 import 경로가 다른 것이 있다. 예: `@DataJpaTest` → `org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest`
 - 화면: Thymeleaf (2026-11-20 결정). 공통 레이아웃은 `templates/fragments/layout.html`(head, header 조각), CSS는 `static/css/style.css` 하나.
-- 디자인: 롤 클라이언트 느낌의 어두운 테마 (2026-11-25, 사용자 요청). 남색 바탕, 금색 테두리, 헥스텍 청록 포인트, 영문 장식 글꼴 Cinzel. 색은 `style.css`의 `:root` 변수로 관리한다. 라이엇 로고와 이미지는 쓰지 않는다. 자세한 규칙은 화면설계서 3장에 있다.
-- 테마 전환: 헤더의 `LoL | OP.GG | 중계` 버튼(쿠키 `theme`, 값 lol/opgg/esports). OP.GG 테마는 `static/css/opgg.css`(밝은 회색, 파란 헤더, 승리/패배 줄 색), 중계 테마는 `static/css/esports.css`(e스포츠 중계 스코어보드 느낌, Black Han Sans + Oswald). 세 CSS가 같은 클래스 이름을 쓰니 템플릿을 고치면 세 테마를 모두 확인한다.
+- 디자인: e스포츠 중계 스코어보드 느낌의 어두운 테마 하나만 쓴다 (2026-11-25 확정). 차콜 바탕, 블루/레드 진영 색, 앰버 포인트, 글꼴은 Black Han Sans(한글 제목) + Oswald(숫자, 영문). 색은 `style.css`의 `:root` 변수로 관리한다. 로고나 방송 그래픽은 쓰지 않는다. 자세한 규칙은 화면설계서 3장에 있다.
 
 ## 패키지 구조
 기능(도메인)별 패키지. 루트 패키지는 `com.inhouse.inhouse_manager`.
@@ -30,9 +29,7 @@ src/main/java/com/inhouse/inhouse_manager/
  ├─ InhouseManagerApplication.java
  ├─ HomeController.java          GET / → redirect:/players
  ├─ common/
- │   ├─ NotFoundException.java   @ResponseStatus(404). 없는 id 조회 시 → templates/error/404.html
- │   ├─ ThemeController.java     GET /theme/{name} → 쿠키 저장 후 Referer 경로로 redirect
- │   └─ ThemeAdvice.java         @ControllerAdvice로 모든 화면에 theme 값 전달
+ │   └─ NotFoundException.java   @ResponseStatus(404). 없는 id 조회 시 → templates/error/404.html
  ├─ player/
  │   ├─ Player.java, Position.java, PlayerRepository.java
  │   ├─ PlayerService.java       등록/수정/삭제(경기 기록 있으면 불가)/조회
@@ -90,6 +87,7 @@ src/test/java/com/inhouse/inhouse_manager/
 > - 2026-11-25: 전체 디자인을 롤 테마로 바꿨다 (`style.css` 전면 교체, 헤더 로고, 승/패 배지를 "승리/패배"로 변경, 인라인 style 제거). 시험 서버에서 화면을 데스크톱과 375px 폭으로 찍어 확인했다.
 > - 2026-11-25: 사용자가 "op.gg 디자인도 보여줘"라고 해서 OP.GG 느낌의 테마를 추가하고 헤더에 전환 버튼을 달았다. 기본값은 LoL 테마다. 최근 경기 줄에 `row-win`/`row-lose` 클래스를 붙였다.
 > - 2026-11-25: 사용자가 추천을 받고 고른 "e스포츠 중계" 테마를 세 번째로 추가했다. 이때부터 커밋 후 자동 푸시를 시작했다.
+> - 2026-11-25: 사용자 요청으로 중계 테마만 남겼다. LoL/OP.GG 테마, 테마 전환 버튼, `ThemeController`, `ThemeAdvice`를 지우고 `esports.css`를 `style.css`로 바꿨다. (예전 `theme` 쿠키가 브라우저에 남아 있어도 아무 영향 없다.)
 > **현재 위치 (2026-11-25):** 요구사항명세서의 필수 기능과 권장 기능을 모두 구현했다. 사용자가 8081 서버를 재시작했고, 모든 화면이 정상 응답하는 것을 확인했다(경기 테이블 자동 생성, 404 화면 포함). 사용자의 요청으로 테스트용 플레이어 8명(`테스트탑1`~`테스트서폿2`, 라이엇 ID는 `#TEST`로 끝남)을 사용자 DB에 등록했다. 총 10명이다. 사용자가 팀 나누기 → 경기 기록으로 첫 경기(match id 1, 2026-11-25, 블루 승)를 기록했고, 목록, 상세, 전적이 모두 맞게 반영된 것을 확인했다. 이제 테스트 플레이어를 지우려면 경기부터 삭제해야 한다.
 
 후보 (요구사항명세서 1.3 "제외" 항목):
