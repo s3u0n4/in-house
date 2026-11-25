@@ -1,40 +1,54 @@
 <!doctype html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head>
+<!-- 등록과 수정이 같이 쓰는 화면. playerId가 없으면 등록, 있으면 수정 -->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:with="editing=${playerId != null}">
+<head th:replace="~{fragments/layout :: head(${playerId != null} ? '플레이어 수정' : '플레이어 등록')}">
     <meta charset="UTF-8">
     <title>플레이어 등록</title>
 </head>
 <body>
-<h1>플레이어 등록</h1>
+<th:block th:replace="~{fragments/layout :: header('players')}"></th:block>
 
-<form th:action="@{/players}" th:object="${playerForm}" method="post">
-    <div>
-        <label for="name">이름</label>
-        <input type="text" th:field="*{name}">
-        <p th:if="${#fields.hasErrors('name')}" th:errors="*{name}" style="color: red">이름 오류</p>
+<main class="container">
+    <div class="page-head">
+        <h1 th:text="${editing} ? '플레이어 수정' : '플레이어 등록'">플레이어 등록</h1>
     </div>
-    <div>
-        <label for="riotId">라이엇 ID</label>
-        <input type="text" th:field="*{riotId}" placeholder="이름#태그">
-        <p th:if="${#fields.hasErrors('riotId')}" th:errors="*{riotId}" style="color: red">라이엇 ID 오류</p>
-    </div>
-    <div>
-        <label for="mainPosition">주 포지션</label>
-        <select th:field="*{mainPosition}">
-            <option value="">선택하세요</option>
-            <option th:each="pos : ${positions}" th:value="${pos}" th:text="${pos}">MID</option>
-        </select>
-        <p th:if="${#fields.hasErrors('mainPosition')}" th:errors="*{mainPosition}" style="color: red">포지션 오류</p>
-    </div>
-    <div>
-        <label for="subPosition">부 포지션</label>
-        <select th:field="*{subPosition}">
-            <option value="">없음</option>
-            <option th:each="pos : ${positions}" th:value="${pos}" th:text="${pos}">TOP</option>
-        </select>
-    </div>
-    <button type="submit">등록</button>
-</form>
-<a th:href="@{/players}">목록으로</a>
+
+    <form class="form card"
+          th:action="${editing} ? @{/players/{id}/edit(id=${playerId})} : @{/players}"
+          th:object="${playerForm}" method="post">
+        <div class="form-row">
+            <label class="title" for="name">이름</label>
+            <input type="text" th:field="*{name}">
+            <p class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">이름 오류</p>
+        </div>
+        <div class="form-row">
+            <label class="title" for="riotId">라이엇 ID</label>
+            <input type="text" th:field="*{riotId}" placeholder="이름#태그">
+            <p class="field-error" th:if="${#fields.hasErrors('riotId')}" th:errors="*{riotId}">라이엇 ID 오류</p>
+        </div>
+        <div class="inline-fields">
+            <div class="form-row">
+                <label class="title" for="mainPosition">주 포지션</label>
+                <select th:field="*{mainPosition}">
+                    <option value="">선택하세요</option>
+                    <option th:each="pos : ${positions}" th:value="${pos}" th:text="${pos}">MID</option>
+                </select>
+                <p class="field-error" th:if="${#fields.hasErrors('mainPosition')}" th:errors="*{mainPosition}">포지션 오류</p>
+            </div>
+            <div class="form-row">
+                <label class="title" for="subPosition">부 포지션</label>
+                <select th:field="*{subPosition}">
+                    <option value="">없음</option>
+                    <option th:each="pos : ${positions}" th:value="${pos}" th:text="${pos}">TOP</option>
+                </select>
+            </div>
+        </div>
+        <div class="actions">
+            <button class="btn primary" type="submit" th:text="${editing} ? '저장' : '등록'">등록</button>
+            <a class="btn" th:href="${editing} ? @{/players/{id}(id=${playerId})} : @{/players}">취소</a>
+        </div>
+    </form>
+</main>
 </body>
 </html>

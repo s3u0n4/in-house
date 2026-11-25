@@ -1,0 +1,127 @@
+:root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --text: #1f2430;
+    --muted: #6b7280;
+    --border: #e3e6eb;
+    --accent: #0f766e;
+    --blue: #2563eb;
+    --blue-soft: #eff4ff;
+    --red: #dc2626;
+    --red-soft: #fef2f2;
+    --success: #15803d;
+    --success-soft: #ecfdf3;
+    --radius: 8px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.container { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+
+/* ---------- 헤더 ---------- */
+.site-header { background: var(--surface); border-bottom: 1px solid var(--border); }
+.header-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 56px; flex-wrap: wrap; }
+.brand { font-weight: 700; color: var(--text); }
+.brand:hover { text-decoration: none; }
+.brand-mark { color: var(--accent); }
+.nav { display: flex; gap: 4px; }
+.nav a { padding: 6px 10px; border-radius: 6px; color: var(--muted); }
+.nav a:hover { background: var(--bg); text-decoration: none; }
+.nav a.active { color: var(--text); font-weight: 600; background: var(--bg); }
+
+/* ---------- 본문 ---------- */
+main.container { padding-top: 24px; padding-bottom: 48px; }
+.page-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.page-head h1 { margin: 0; font-size: 22px; }
+.page-head .sub { color: var(--muted); margin: 2px 0 0; }
+h2 { font-size: 17px; margin: 28px 0 10px; }
+.muted { color: var(--muted); }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.actions form { margin: 0; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+
+/* ---------- 안내 문구 ---------- */
+.flash { margin: 16px 0 0; padding: 10px 14px; border-radius: var(--radius); }
+.flash.success { background: var(--success-soft); color: var(--success); }
+.flash.error, .alert.error { background: var(--red-soft); color: var(--red); }
+.alert { padding: 10px 14px; border-radius: var(--radius); margin: 0 0 16px; }
+.alert p { margin: 0; }
+.field-error { color: var(--red); font-size: 13px; margin: 4px 0 0; }
+
+/* ---------- 버튼 ---------- */
+.btn {
+    display: inline-block; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); font: inherit; font-size: 14px; cursor: pointer;
+}
+.btn:hover { background: var(--bg); text-decoration: none; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: var(--red); border-color: #f3b4b4; }
+.btn.danger:hover { background: var(--red-soft); }
+
+/* ---------- 표 ---------- */
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { font-size: 13px; color: var(--muted); font-weight: 600; background: #fafbfc; }
+tbody tr:last-child td { border-bottom: none; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+td.wrap { white-space: normal; }
+td.empty { text-align: center; color: var(--muted); padding: 28px 12px; }
+tr.clickable:hover { background: #fafbfc; }
+
+/* ---------- 배지, 팀 색 ---------- */
+.badge { display: inline-block; min-width: 28px; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; text-align: center; }
+.badge.win { background: var(--blue-soft); color: var(--blue); }
+.badge.lose { background: #f1f2f4; color: var(--muted); }
+.badge.fit-2 { background: var(--success-soft); color: var(--success); }
+.badge.fit-1 { background: #fff7e6; color: #b45309; }
+.badge.fit-0 { background: #f1f2f4; color: var(--muted); }
+.team-blue { color: var(--blue); font-weight: 600; }
+.team-red { color: var(--red); font-weight: 600; }
+
+/* ---------- 폼 ---------- */
+.form { max-width: 480px; }
+.form-row { margin-bottom: 16px; }
+.form-row .title { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+input[type=text], input[type=date], select {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
+    font: inherit; background: var(--surface); color: var(--text);
+}
+input:focus, select:focus { outline: 2px solid color-mix(in srgb, var(--accent) 35%, transparent); border-color: var(--accent); }
+.radio-group { display: flex; gap: 16px; padding: 8px 0; }
+.radio-group label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+.inline-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 640px; }
+
+/* ---------- 팀 두 칸 (경기 기록, 경기 상세, 팀 나누기 결과) ---------- */
+.teams { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
+.team { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--blue); border-radius: var(--radius); padding: 14px 16px; }
+.team.red { border-left-color: var(--red); }
+.team-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 10px; font-size: 16px; }
+.slot { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 6px 0; }
+.slot + .slot { border-top: 1px dashed var(--border); }
+.slot-pos { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .02em; }
+
+/* ---------- 요약 숫자 ---------- */
+.summary { display: flex; gap: 28px; flex-wrap: wrap; }
+.summary .value { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.summary .label { font-size: 13px; color: var(--muted); }
+
+/* ---------- 휴대폰 폭 ---------- */
+@media (max-width: 640px) {
+    .teams, .inline-fields { grid-template-columns: 1fr; }
+    main.container { padding-top: 16px; }
+}

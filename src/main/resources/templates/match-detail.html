@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('경기 상세')}">
+    <meta charset="UTF-8">
+    <title>경기 상세</title>
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: header('matches')}"></th:block>
+
+<main class="container">
+    <div class="page-head">
+        <h1><span th:text="${match.playedAt}">2026-11-24</span> 경기</h1>
+        <form th:action="@{/matches/{id}/delete(id=${match.id})}" method="post"
+              onsubmit="return confirm('이 경기 기록을 삭제할까요?')">
+            <button class="btn danger" type="submit">삭제</button>
+        </form>
+    </div>
+
+    <div class="teams">
+        <section class="team" th:each="side : ${ {'BLUE', 'RED'} }"
+                 th:with="members=${side == 'BLUE'} ? ${match.blueTeam} : ${match.redTeam},
+                          won=${match.winner.name() == side}"
+                 th:classappend="${side == 'RED'} ? 'red'">
+            <h3 class="team-title">
+                <span th:text="${side == 'BLUE'} ? '블루팀' : '레드팀'"
+                      th:class="${side == 'BLUE'} ? 'team-blue' : 'team-red'">블루팀</span>
+                <span class="badge" th:classappend="${won} ? 'win' : 'lose'" th:text="${won} ? '승' : '패'">승</span>
+            </h3>
+            <div class="slot" th:each="p : ${members}">
+                <span class="slot-pos" th:text="${p.position}">TOP</span>
+                <a th:href="@{/players/{id}(id=${p.player.id})}" th:text="${p.player.name}">철수</a>
+                <span class="muted" th:text="${p.player.riotId}">철수#KR1</span>
+            </div>
+        </section>
+    </div>
+
+    <a th:href="@{/matches}">← 경기 목록</a>
+</main>
+</body>
+</html>

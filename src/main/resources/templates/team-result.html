@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('팀 나누기 결과')}">
+    <meta charset="UTF-8">
+    <title>팀 나누기 결과</title>
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: header('teams')}"></th:block>
+
+<main class="container">
+    <div class="page-head">
+        <div>
+            <h1>팀 나누기 결과</h1>
+            <p class="sub">
+                점수 차이 <strong th:text="${#numbers.formatDecimal(split.scoreDiff(), 1, 2)}">0.04</strong>
+                (블루 <span th:text="${#numbers.formatDecimal(split.blue().score(), 1, 2)}">2.61</span>
+                : 레드 <span th:text="${#numbers.formatDecimal(split.red().score(), 1, 2)}">2.57</span>)
+            </p>
+        </div>
+    </div>
+
+    <div class="teams">
+        <section class="team" th:each="side : ${ {'BLUE', 'RED'} }"
+                 th:with="lineup=${side == 'BLUE'} ? ${split.blue()} : ${split.red()}"
+                 th:classappend="${side == 'RED'} ? 'red'">
+            <h3 class="team-title">
+                <span th:text="${side == 'BLUE'} ? '블루팀' : '레드팀'"
+                      th:class="${side == 'BLUE'} ? 'team-blue' : 'team-red'">블루팀</span>
+                <span class="muted" style="font-size: 13px">점수
+                    <span th:text="${#numbers.formatDecimal(lineup.score(), 1, 2)}">2.61</span></span>
+            </h3>
+            <div class="slot" th:each="a : ${lineup.assignments()}">
+                <span class="slot-pos" th:text="${a.position()}">TOP</span>
+                <span th:text="${a.player().name()}">철수</span>
+                <span class="badge" th:classappend="|fit-${a.fit()}|" th:text="${a.fitLabel()}">주</span>
+            </div>
+        </section>
+    </div>
+
+    <p class="muted">점수는 보정 승률 (승+1)/(경기+2)의 합입니다. 신규 플레이어는 0.50에서 시작합니다.
+        배지: <span class="badge fit-2">주</span> 주 포지션 · <span class="badge fit-1">부</span> 부 포지션
+        · <span class="badge fit-0">-</span> 그 외</p>
+
+    <div class="actions">
+        <a class="btn primary"
+           th:href="@{/matches/new(blue=${split.blue().playerIds()}, red=${split.red().playerIds()})}">이 팀으로 경기 기록</a>
+        <a class="btn" th:href="@{/teams(playerIds=${playerIds})}">참가자 다시 고르기</a>
+    </div>
+</main>
+</body>
+</html>

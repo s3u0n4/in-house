@@ -33,4 +33,11 @@ public class Player {
         this.mainPosition = mainPosition;
         this.subPosition = subPosition;
     }
+
+    public void update(String name, String riotId, Position mainPosition, Position subPosition) {
+        this.name = name;
+        this.riotId = riotId;
+        this.mainPosition = mainPosition;
+        this.subPosition = subPosition;
+    }
 }

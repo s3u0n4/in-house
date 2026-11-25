@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('경기 기록')}">
+    <meta charset="UTF-8">
+    <title>경기 기록</title>
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: header('matches')}"></th:block>
+
+<main class="container">
+    <div class="page-head">
+        <h1>경기 기록</h1>
+        <a class="btn primary" th:href="@{/matches/new}">+ 경기 기록</a>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+            <tr><th>날짜</th><th>승리</th><th>블루팀</th><th>레드팀</th><th></th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="match : ${matches}">
+                <td th:text="${match.playedAt}">2026-11-24</td>
+                <td th:text="${match.winner.label}" th:class="${match.winner.name() == 'BLUE'} ? 'team-blue' : 'team-red'">블루</td>
+                <!-- .![player.name]: 리스트의 각 원소에서 player.name만 뽑는다 (SpEL 프로젝션) -->
+                <td class="wrap" th:text="${#strings.listJoin(match.blueTeam.![player.name], ', ')}">철수, 영희</td>
+                <td class="wrap" th:text="${#strings.listJoin(match.redTeam.![player.name], ', ')}">지훈, 수빈</td>
+                <td><a th:href="@{/matches/{id}(id=${match.id})}">보기</a></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(matches)}">
+                <td class="empty" colspan="5">아직 기록된 경기가 없습니다.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+</body>
+</html>

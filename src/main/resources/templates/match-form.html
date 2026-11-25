@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('경기 기록')}">
+    <meta charset="UTF-8">
+    <title>경기 기록</title>
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: header('matches')}"></th:block>
+
+<main class="container">
+    <div class="page-head">
+        <h1>경기 기록</h1>
+    </div>
+
+    <p class="alert error" th:if="${#lists.size(players) < 10}">
+        등록된 플레이어가 <span th:text="${#lists.size(players)}">0</span>명입니다. 경기를 기록하려면 10명이 필요합니다.
+        <a th:href="@{/players/new}">플레이어 등록하기</a>
+    </p>
+
+    <form th:action="@{/matches}" th:object="${matchForm}" method="post">
+        <div class="alert error" th:if="${#fields.hasGlobalErrors()}">
+            <p th:each="err : ${#fields.globalErrors()}" th:text="${err}">같은 플레이어를 두 자리에 넣을 수 없습니다.</p>
+        </div>
+
+        <div class="inline-fields">
+            <div class="form-row">
+                <label class="title" for="playedAt">경기 날짜</label>
+                <input type="date" th:field="*{playedAt}">
+                <p class="field-error" th:if="${#fields.hasErrors('playedAt')}" th:errors="*{playedAt}">날짜 오류</p>
+            </div>
+            <div class="form-row">
+                <span class="title">승리 팀</span>
+                <div class="radio-group">
+                    <label th:each="team : ${teams}">
+                        <input type="radio" th:field="*{winner}" th:value="${team}">
+                        <span th:text="${team.label}" th:class="${team.name() == 'BLUE'} ? 'team-blue' : 'team-red'">블루</span>
+                    </label>
+                </div>
+                <p class="field-error" th:if="${#fields.hasErrors('winner')}" th:errors="*{winner}">승리 팀 오류</p>
+            </div>
+        </div>
+
+        <div class="teams">
+            <!-- 블루팀, 레드팀을 같은 모양으로 그린다. side.field: 폼 객체의 리스트 이름 -->
+            <section th:each="side : ${ {'bluePlayerIds', 'redPlayerIds'} }"
+                     class="team" th:classappend="${side == 'redPlayerIds'} ? 'red'">
+                <h3 th:text="${side == 'bluePlayerIds'} ? '블루팀' : '레드팀'"
+                    th:class="${side == 'bluePlayerIds'} ? 'team-title team-blue' : 'team-title team-red'">블루팀</h3>
+                <div class="slot" th:each="pos, stat : ${positions}">
+                    <span class="slot-pos" th:text="${pos}">TOP</span>
+                    <!-- __${...}__ : 먼저 계산해서 글자로 끼워 넣는다 → *{bluePlayerIds[0]} 같은 식이 된다 -->
+                    <select th:field="*{__${side}__[__${stat.index}__]}" th:attr="aria-label=${pos}">
+                        <option value="">플레이어 선택</option>
+                        <option th:each="p : ${players}" th:value="${p.id}" th:text="|${p.name} (${p.riotId})|">철수 (철수#KR1)</option>
+                    </select>
+                    <span></span>
+                </div>
+            </section>
+        </div>
+
+        <div class="actions">
+            <button class="btn primary" type="submit">저장</button>
+            <a class="btn" th:href="@{/matches}">취소</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

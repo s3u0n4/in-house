@@ -1,0 +1,33 @@
+<!doctype html>
+<!-- 여러 화면이 같이 쓰는 조각(fragment) 모음. 각 화면에서 th:replace로 가져다 쓴다 -->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' · 내전 매니저'">내전 매니저</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+
+<!-- menu: 현재 메뉴 이름 (players, matches, teams). 해당 메뉴를 강조한다 -->
+<th:block th:fragment="header(menu)">
+    <header class="site-header">
+        <div class="container header-inner">
+            <a class="brand" th:href="@{/}"><span class="brand-mark">◆</span> 내전 매니저</a>
+            <nav class="nav">
+                <a th:href="@{/players}" th:classappend="${menu == 'players'} ? 'active'">플레이어</a>
+                <a th:href="@{/matches}" th:classappend="${menu == 'matches'} ? 'active'">경기 기록</a>
+                <a th:href="@{/teams}" th:classappend="${menu == 'teams'} ? 'active'">팀 나누기</a>
+            </nav>
+        </div>
+    </header>
+    <div class="container">
+        <p class="flash success" th:if="${message}" th:text="${message}">저장했습니다.</p>
+        <p class="flash error" th:if="${errorMessage}" th:text="${errorMessage}">오류가 있습니다.</p>
+    </div>
+</th:block>
+
+</body>
+</html>

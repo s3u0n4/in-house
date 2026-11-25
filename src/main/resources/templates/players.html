@@ -1,33 +1,50 @@
 <!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head>
+<head th:replace="~{fragments/layout :: head('플레이어 목록')}">
     <meta charset="UTF-8">
     <title>플레이어 목록</title>
 </head>
 <body>
-<h1>플레이어 목록</h1>
-<a th:href="@{/players/new}">플레이어 등록</a>
+<th:block th:replace="~{fragments/layout :: header('players')}"></th:block>
 
-<table border="1">
-    <thead>
-    <tr>
-        <th>이름</th>
-        <th>라이엇 ID</th>
-        <th>주 포지션</th>
-        <th>부 포지션</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each = "player : ${players}">
-        <td th:text="${player.name}">홍길동</td>
-        <td th:text="${player.riotId}">Hong#KR1</td>
-        <td th:text="${player.mainPosition}">MID</td>
-        <td th:text="${player.subPosition}">TOP</td>
-    </tr>
-    <tr th:if="${#lists.isEmpty(players)}">
-        <td colspan="4">등록된 플레이어가 없습니다.</td>
-    </tr>
-    </tbody>
-</table>
+<main class="container">
+    <div class="page-head">
+        <h1>플레이어 목록</h1>
+        <a class="btn primary" th:href="@{/players/new}">+ 플레이어 등록</a>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+            <tr>
+                <th>이름</th>
+                <th>라이엇 ID</th>
+                <th>주 포지션</th>
+                <th>부 포지션</th>
+                <th class="num">경기</th>
+                <th class="num">승</th>
+                <th class="num">패</th>
+                <th class="num">승률</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- th:with: 이 줄 안에서 쓸 변수를 만든다. stats는 플레이어 id → 전적 Map -->
+            <tr th:each="player : ${players}" th:with="s=${stats[player.id]}">
+                <td><a th:href="@{/players/{id}(id=${player.id})}" th:text="${player.name}">홍길동</a></td>
+                <td th:text="${player.riotId}">Hong#KR1</td>
+                <td th:text="${player.mainPosition}">MID</td>
+                <td th:text="${player.subPosition} ?: '-'">TOP</td>
+                <td class="num" th:text="${s.games()}">0</td>
+                <td class="num" th:text="${s.wins()}">0</td>
+                <td class="num" th:text="${s.losses()}">0</td>
+                <td class="num" th:text="${s.winRateText()}">-</td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(players)}">
+                <td class="empty" colspan="8">등록된 플레이어가 없습니다.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
 </body>
 </html>
