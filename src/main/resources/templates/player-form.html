@@ -42,6 +42,7 @@
                     <option value="">없음</option>
                     <option th:each="pos : ${positions}" th:value="${pos}" th:text="${pos}">TOP</option>
                 </select>
+                <p class="field-error" th:if="${#fields.hasErrors('subPositionDifferent')}" th:errors="*{subPositionDifferent}">부 포지션 오류</p>
             </div>
         </div>
         <fieldset class="lane-fields">

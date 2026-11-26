@@ -41,7 +41,7 @@ src/main/java/com/inhouse/inhouse_manager/
  │   ├─ LaneTiers.java           라인별 티어 5개 + LP (@Embeddable record). Player.laneTiers, 옛 플레이어는 null
  │   ├─ PlayerService.java       등록/수정/삭제/조회. 삭제: 기록 없으면 DB 삭제, 있으면 소프트 삭제(deletedAt)
  │   ├─ PlayerController.java    /players, /players/new, /players/edit(목록 수정), /players/{id}, /players/{id}/edit, /players/{id}/delete
- │   ├─ PlayerForm.java          등록·수정 폼 + 검증
+ │   ├─ PlayerForm.java          등록·수정 폼 + 검증 (라인별 티어·LP 필드, 부≠주 포지션)
  │   ├─ PlayerListForm.java      목록 수정 폼 (Row extends PlayerForm + id, @Valid 리스트)
  │   └─ PlayerUpdate.java        record, 여러 명 수정용 (PlayerService.updateAll, 한 트랜잭션)
  ├─ match/
@@ -113,6 +113,7 @@ src/test/java/com/inhouse/inhouse_manager/
 > - 2026-11-26: 사용자 요청("라인마다 본인이 생각하는 티어를 입력해서 하자")으로 라인별 티어를 추가했다. 사용자 선택: 5칸 모두 필수, 솔랭 티어·주/부 포지션은 유지. `LaneTiers`(@Embeddable record, 컬럼 top_tier ~ support_tier)를 `Player.laneTiers`에 넣고, 팀 나누기는 맡은 라인의 티어로 계산(감점 없음). 라인별 티어가 없는 옛 플레이어는 솔랭 티어 + 포지션 감점. 균형이 비슷한 조합끼리는 두 팀 전력 합이 큰 쪽을 먼저 고르게 바꿨다("35 대 35"와 "25 대 25"를 같게 보던 문제). 등록 폼에 "솔랭 티어로 빈칸 채우기" 버튼. 테스트 59개. (목록에 "라인 티어 미입력"으로 표시, 목록 수정에서 한 번에 입력 가능)
 > - 2026-11-26: 사용자 요청으로 실제 DB(8081)의 플레이어 10명(`#RAND`, id 12~21, 이때 남아 있던 전부)에게 라인별 티어를 임의로 채웠다. 규칙: 주 포지션 = 솔랭 티어, 부 포지션 = 한 단계 아래, 나머지 = 1~3단계 아래 무작위(최저 아이언). 8081의 목록 수정 화면으로 저장했다.
 > - 2026-11-26: 사용자 요청("솔랭 티어 말고 라인 티어로, 마스터·그마·챌은 점수를 적을 수 있게")으로 솔랭 티어 입력·표시를 없애고(`Player.tier` 필드 삭제, DB `tier` 컬럼은 남아 있지만 안 씀, `Tier.UNRANKED` 삭제), 마스터 이상 라인에 LP 칸(선택, 0~3000)을 추가했다. 점수 = 8 + LP/500 (비우면 8/9/10). 목록·카드·휴지통의 티어 배지는 "주 라인 티어"(주 포지션의 라인 티어). 라인별 티어가 없는 옛 플레이어는 참가자 주 라인 티어 평균 + 포지션 감점. 실제 DB 복사본으로 서버를 띄워 기존 데이터가 그대로 읽히는 것을 확인했다. 테스트 67개.
+> - 2026-11-26: 사용자 요청("입력값을 바꿔서 직접 테스트")으로 메모리 DB 서버에서 31가지 입력을 시험했다(등록·수정·목록 수정·팀 나누기·랜덤 교체·브라우저 LP 칸·휴대폰 폭). 찾은 문제 2개를 고쳤다: (1) LP에 abc/1.5, 조작된 티어·포지션 값을 보내면 "Failed to convert property value..." 영어 오류가 그대로 보임 → `messages.properties`에 typeMismatch 한국어 문구 추가 (2) 부 포지션을 주 포지션과 같게 저장할 수 있었음 → `PlayerForm.isSubPositionDifferent` (@AssertTrue). `PlayerFormTest` 추가, 테스트 70개.
 > **현재 위치 (2026-11-25 세션 종료):** 오늘 작업은 모두 커밋하고 GitHub(`main`)에 푸시했다. 테스트 47개 통과.
 > - 마지막 기능(관리자 로그인과 휴지통)은 시험 서버(8082)에서만 확인했다. 사용자가 IntelliJ에서 **Gradle 새로고침(시큐리티 의존성 추가) 후 8081 재시작**을 아직 하지 않았을 수 있으니, 다음 세션 시작 때 먼저 확인할 것.
 > - 사용자 DB(8081) 상태 (2026-11-26): 목록에 남은 플레이어는 `#RAND` 10명(id 12~21)뿐이고, 모두 솔랭 티어와 라인별 티어가 있다. 나머지는 삭제(휴지통). 경기 기록 있음.

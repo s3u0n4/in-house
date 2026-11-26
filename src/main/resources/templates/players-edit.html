@@ -63,6 +63,8 @@
                             <option value="">없음</option>
                             <option th:each="pos : ${positions}" th:value="${pos}" th:text="${pos}">TOP</option>
                         </select>
+                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].subPositionDifferent')}"
+                           th:errors="*{rows[__${stat.index}__].subPositionDifferent}">부 포지션 오류</p>
                     </td>
                     <td>
                         <select class="lane-tier" th:field="*{rows[__${stat.index}__].topTier}" th:attr="aria-label=|${stat.count}번째 탑 티어|">

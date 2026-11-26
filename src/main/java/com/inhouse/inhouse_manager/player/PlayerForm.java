@@ -1,5 +1,6 @@
 package com.inhouse.inhouse_manager.player;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -25,6 +26,12 @@ public class PlayerForm {
     @NotNull(message = "주 포지션을 선택하세요.")
     private Position mainPosition;
     private Position subPosition;
+
+    /** 부 포지션은 없거나 주 포지션과 달라야 한다 */
+    @AssertTrue(message = "부 포지션은 주 포지션과 다르게 골라 주세요.")
+    public boolean isSubPositionDifferent() {
+        return subPosition == null || subPosition != mainPosition;
+    }
 
     // 라인별 티어: 본인이 생각하기에 그 라인을 어느 티어 정도로 하는지 (팀 나누기에 쓴다)
     // LP는 마스터 이상일 때만 적을 수 있고, 비워도 된다
