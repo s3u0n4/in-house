@@ -99,6 +99,35 @@ class TeamBalancerTest {
     }
 
     @Test
+    void 주_포지션이_아니면_전력을_깎는다() {
+        Candidate top = candidate(1, Position.TOP, 4);
+        Candidate topWithSub = new Candidate(2L, "p2", Position.TOP, Position.MID, "골드", 4, 0.5);
+
+        assertThat(new Assignment(top, Position.TOP).power()).isEqualTo(4.0);
+        assertThat(new Assignment(topWithSub, Position.MID).power()).isEqualTo(3.0);
+        assertThat(new Assignment(top, Position.MID).power()).isEqualTo(2.0);
+    }
+
+    @Test
+    void 라인이_겹치는_사람은_두_팀에_고르게_나눠서_포지션_감점이_같아지게_한다() {
+        // 미드 주포 6명 + 탑·정글·원딜·서폿 1명씩, 모두 골드
+        // 미드 3:3이면 두 팀 다 2명이 다른 라인을 가지만, 2:4면 한 팀만 3명이 다른 라인을 가서 약해진다
+        List<Candidate> candidates = new ArrayList<>();
+        long id = 1;
+        for (int i = 0; i < 6; i++) {
+            candidates.add(candidate(id++, Position.MID, 4));
+        }
+        for (Position position : List.of(Position.TOP, Position.JUNGLE, Position.ADC, Position.SUPPORT)) {
+            candidates.add(candidate(id++, position, 4));
+        }
+
+        TeamSplit split = teamBalancer.split(candidates);
+
+        assertThat(split.blue().positionPenalty()).isEqualTo(split.red().positionPenalty());
+        assertThat(split.powerDiff()).isLessThan(1e-9);
+    }
+
+    @Test
     void 열명이_아니면_예외가_발생한다() {
         List<Candidate> nine = new ArrayList<>(sameCandidates().subList(0, 9));
 

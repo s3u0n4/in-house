@@ -32,7 +32,9 @@
                       th:class="${side == 'BLUE'} ? 'team-blue' : 'team-red'">블루팀</span>
                 <span class="team-score">평균
                     <span th:text="${lineup.averageTierLabel()}">골드</span>
-                    · 전력 <span th:text="${#numbers.formatDecimal(lineup.power(), 1, 1)}">21.5</span></span>
+                    · 전력 <span th:text="${#numbers.formatDecimal(lineup.power(), 1, 1)}">21.5</span>
+                    <th:block th:if="${lineup.positionPenalty() > 0}">(라인 감점 -<span
+                            th:text="${#numbers.formatDecimal(lineup.positionPenalty(), 1, 0)}">2</span>)</th:block></span>
             </h3>
             <!-- 랜덤 교체로 상대 팀과 자리를 바꾼 라인은 강조한다 -->
             <div class="slot" th:each="a : ${lineup.assignments()}"
@@ -48,6 +50,7 @@
 
     <p class="muted"><strong>어떻게 나누나요?</strong> 사람마다 티어 점수(아이언 1 ~ 챌린저 10)에 내전 성적을 더해 전력을 매깁니다
         (내전에서 많이 이기면 최대 +2, 많이 지면 최대 -2). 언랭이나 티어 미입력은 오늘 참가자 평균으로 칩니다.
+        라인이 겹쳐서 주 포지션을 못 가면 약해지는 것도 계산합니다 (부 포지션 -1, 그 외 포지션 -2).
         두 팀 전력 합이 비슷하고, 잘하는 사람이 한쪽에 몰리지 않게 나눈 뒤, 주 포지션을 많이 맡는 배치를 고릅니다.
         배지: <span class="badge fit-2">주</span> 주 포지션 · <span class="badge fit-1">부</span> 부 포지션
         · <span class="badge fit-0">-</span> 그 외</p>

@@ -24,6 +24,8 @@ public class TeamBalancer {
     static final double DISTRIBUTION_WEIGHT = 0.5;
     /** 불균형 점수가 최소값 + 이 값 이내면 "비슷하다"고 보고 포지션 적합도로 고른다 */
     static final double COST_TOLERANCE = 0.5;
+    /** 주 포지션이 아닐 때 빼는 전력 점수. 부 포지션이면 1번, 그 외 포지션이면 2번 뺀다 (티어 1~2단계) */
+    static final double OFF_ROLE_PENALTY = 1.0;
 
     private static final List<int[]> POSITION_ORDERS = permutations(TEAM_SIZE);
 
@@ -46,6 +48,16 @@ public class TeamBalancer {
             return 0;
         }
 
+        /** 포지션 감점. 주 포지션 0, 부 포지션 -1, 그 외 -2 */
+        public double positionPenalty() {
+            return (2 - fit()) * OFF_ROLE_PENALTY;
+        }
+
+        /** 이 포지션을 맡았을 때의 전력 = 전력 점수 - 포지션 감점 */
+        public double power() {
+            return player.power() - positionPenalty();
+        }
+
         public String fitLabel() {
             return switch (fit()) {
                 case 2 -> "주";
@@ -57,8 +69,13 @@ public class TeamBalancer {
 
     /** 포지션 순서(TOP~SUPPORT)로 정렬된 팀 배치 */
     public record Lineup(List<Assignment> assignments) {
+        /** 팀 전력 = 팀원이 맡은 포지션 기준 전력의 합 (주 포지션이 아니면 감점된 값) */
         public double power() {
-            return assignments.stream().mapToDouble(a -> a.player().power()).sum();
+            return assignments.stream().mapToDouble(Assignment::power).sum();
+        }
+
+        public double positionPenalty() {
+            return assignments.stream().mapToDouble(Assignment::positionPenalty).sum();
         }
 
         public double averageTier() {
@@ -163,7 +180,10 @@ public class TeamBalancer {
         return new TeamSplit(new Lineup(blue), new Lineup(red));
     }
 
-    /** 5명을 5개 포지션에 배치하는 120가지 중 적합도가 가장 높은 배치 */
+    /**
+     * 5명을 5개 포지션에 배치하는 120가지 중 적합도가 가장 높은 배치.
+     * 포지션 감점은 (2 - 적합도)에 비례하므로, 적합도가 가장 높은 배치가 곧 팀 전력이 가장 높은 배치다.
+     */
     private Lineup bestLineup(List<Candidate> members) {
         Position[] positions = Position.values();
         Lineup best = null;
