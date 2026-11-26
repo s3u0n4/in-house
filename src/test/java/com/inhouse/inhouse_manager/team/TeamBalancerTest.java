@@ -213,6 +213,27 @@ class TeamBalancerTest {
     }
 
     @Test
+    void 다른_라인_가는_사람을_줄이는_것보다_두_팀_감점을_같게_하는_것을_먼저_본다() {
+        // 탑·정글·원딜 주포 2명씩, 미드 주포 3명(7번은 부 포지션 서폿), 서폿 주포 1명
+        // 한 팀만 7번이 서폿(-1)을 가면 실력 차이가 1 생긴다 → 두 팀 감점이 같은 쪽(-2 대 -2)을 고른다 (2026-11-26 사용자 결정)
+        List<Candidate> candidates = new ArrayList<>();
+        long id = 1;
+        for (Position position : List.of(Position.TOP, Position.JUNGLE, Position.ADC)) {
+            candidates.add(candidate(id++, position, 4));
+            candidates.add(candidate(id++, position, 4));
+        }
+        candidates.add(new Candidate(id++, "p7", Position.MID, Position.SUPPORT, "골드", 4, 0.5));
+        candidates.add(candidate(id++, Position.MID, 4));
+        candidates.add(candidate(id++, Position.MID, 4));
+        candidates.add(candidate(id, Position.SUPPORT, 4));
+
+        TeamSplit split = teamBalancer.split(candidates);
+
+        assertThat(split.powerDiff()).isLessThan(1e-9);
+        assertThat(split.blue().positionPenalty()).isEqualTo(split.red().positionPenalty());
+    }
+
+    @Test
     void 열명이_아니면_예외가_발생한다() {
         List<Candidate> nine = new ArrayList<>(sameCandidates().subList(0, 9));
 
