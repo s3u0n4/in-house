@@ -208,6 +208,13 @@ input[type=checkbox], input[type=radio] { width: 17px; height: 17px; cursor: poi
 .radio-group { display: flex; gap: 22px; min-height: 42px; align-items: center; }
 .radio-group label { display: flex; gap: 8px; align-items: center; cursor: pointer; font-family: var(--display); font-size: 16px; }
 .inline-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 700px; }
+/* 라인별 티어 입력 (탑 ~ 서폿 5칸) */
+.lane-fields { border: 1px solid var(--line); padding: 14px 16px 0; margin: 4px 0 18px; max-width: 700px; }
+.lane-fields legend { padding: 0 6px; font-family: var(--display); font-size: 14px; color: var(--accent); }
+.lane-fields .muted { margin: 0 0 14px; font-size: 13px; }
+.lane-fields .muted .btn { margin-left: 6px; vertical-align: middle; }
+.lane-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.lane-tiers { color: var(--muted); font-size: 13px; }
 /* 화면에는 안 보이지만 키보드와 화면 낭독기는 쓸 수 있게 숨긴다 */
 .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
@@ -320,6 +327,7 @@ body:has(.drag-ghost) { cursor: grabbing; user-select: none; }
 /* ---------- 휴대폰 폭 ---------- */
 @media (max-width: 640px) {
     .teams, .inline-fields { grid-template-columns: 1fr; }
+    .lane-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .teams { gap: 16px; }
     .teams::after { display: none; }
     .picker { grid-template-columns: 1fr; }

@@ -1,5 +1,6 @@
 package com.inhouse.inhouse_manager.team;
 
+import com.inhouse.inhouse_manager.player.LaneTiers;
 import com.inhouse.inhouse_manager.player.Player;
 import com.inhouse.inhouse_manager.player.PlayerRepository;
 import com.inhouse.inhouse_manager.player.Position;
@@ -38,7 +39,7 @@ class TeamServiceTest {
     void setUp() {
         ids = new ArrayList<>();
         for (int i = 1; i <= 10; i++) {
-            ids.add(playerRepository.save(new Player("플레이어" + i, "player#" + i, Position.MID, null, Tier.GOLD)).getId());
+            ids.add(playerRepository.save(new Player("플레이어" + i, "player#" + i, Position.MID, null, Tier.GOLD, null)).getId());
         }
     }
 
@@ -48,6 +49,23 @@ class TeamServiceTest {
 
         assertThat(split.blue().playerIds()).hasSize(5);
         assertThat(split.red().playerIds()).hasSize(5);
+    }
+
+    @Test
+    void 라인별_티어를_넣은_플레이어는_그_라인의_티어로_보여준다() {
+        // 솔랭은 골드지만 탑만 챌린저라고 입력한 사람 → 탑에 배치되고 "챌린저"로 보인다
+        Long topAce = playerRepository.save(new Player("탑장인", "top#1", Position.MID, null, Tier.GOLD,
+                new LaneTiers(Tier.CHALLENGER, Tier.GOLD, Tier.GOLD, Tier.GOLD, Tier.GOLD))).getId();
+        List<Long> withAce = new ArrayList<>(ids.subList(0, 9));
+        withAce.add(topAce);
+
+        TeamSplit split = teamService.split(withAce);
+
+        Assignment ace = Stream.concat(split.blue().assignments().stream(), split.red().assignments().stream())
+                .filter(a -> a.player().playerId().equals(topAce))
+                .findFirst().orElseThrow();
+        assertThat(ace.position()).isEqualTo(Position.TOP);
+        assertThat(ace.tierLabel()).isEqualTo("챌린저");
     }
 
     @Test
@@ -72,11 +90,11 @@ class TeamServiceTest {
         // 아이언(1점) 4명 + 다이아몬드(7점) 4명 → 평균 4점. 언랭 1명, 미입력(null) 1명
         List<Long> mixed = new ArrayList<>();
         for (int i = 1; i <= 4; i++) {
-            mixed.add(playerRepository.save(new Player("아이언" + i, "iron#" + i, Position.TOP, null, Tier.IRON)).getId());
-            mixed.add(playerRepository.save(new Player("다이아" + i, "dia#" + i, Position.MID, null, Tier.DIAMOND)).getId());
+            mixed.add(playerRepository.save(new Player("아이언" + i, "iron#" + i, Position.TOP, null, Tier.IRON, null)).getId());
+            mixed.add(playerRepository.save(new Player("다이아" + i, "dia#" + i, Position.MID, null, Tier.DIAMOND, null)).getId());
         }
-        Long unranked = playerRepository.save(new Player("언랭", "unranked#1", Position.ADC, null, Tier.UNRANKED)).getId();
-        Long noTier = playerRepository.save(new Player("미입력", "notier#1", Position.SUPPORT, null, null)).getId();
+        Long unranked = playerRepository.save(new Player("언랭", "unranked#1", Position.ADC, null, Tier.UNRANKED, null)).getId();
+        Long noTier = playerRepository.save(new Player("미입력", "notier#1", Position.SUPPORT, null, null, null)).getId();
         mixed.add(unranked);
         mixed.add(noTier);
 
@@ -112,7 +130,7 @@ class TeamServiceTest {
         Position[] mains = {Position.TOP, Position.JUNGLE, Position.MID, Position.ADC, Position.SUPPORT,
                 Position.TOP, Position.JUNGLE, Position.MID, Position.ADC, Position.SUPPORT};
         for (int i = 0; i < tiers.length; i++) {
-            spread.add(playerRepository.save(new Player("p" + i, "spread#" + i, mains[i], null, tiers[i])).getId());
+            spread.add(playerRepository.save(new Player("p" + i, "spread#" + i, mains[i], null, tiers[i], null)).getId());
         }
         TeamSplit split = teamService.split(spread);
 

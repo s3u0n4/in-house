@@ -25,7 +25,8 @@ public class PlayerListForm {
         private boolean delete;
 
         public PlayerUpdate toUpdate() {
-            return new PlayerUpdate(id, getName(), getRiotId(), getMainPosition(), getSubPosition(), getTier());
+            return new PlayerUpdate(id, getName(), getRiotId(), getMainPosition(), getSubPosition(), getTier(),
+                    toLaneTiers());
         }
     }
 
@@ -39,6 +40,7 @@ public class PlayerListForm {
             row.setTier(player.getTier());
             row.setMainPosition(player.getMainPosition());
             row.setSubPosition(player.getSubPosition());
+            row.fillLaneTiers(player.getLaneTiers());
             form.rows.add(row);
         }
         return form;

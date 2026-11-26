@@ -67,7 +67,8 @@ public class TeamService {
                     Integer score = tierScoreOf(player);
                     return new Candidate(player.getId(), player.getName(), player.getMainPosition(),
                             player.getSubPosition(), tierLabelOf(player),
-                            score != null ? score : averageTier, stats.get(player.getId()).rating());
+                            score != null ? score : averageTier, stats.get(player.getId()).rating(),
+                            player.hasLaneTiers() ? player.getLaneTiers() : null);
                 })
                 .toList();
         return teamBalancer.split(candidates);

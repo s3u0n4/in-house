@@ -1,6 +1,8 @@
 package com.inhouse.inhouse_manager.team;
 
+import com.inhouse.inhouse_manager.player.LaneTiers;
 import com.inhouse.inhouse_manager.player.Position;
+import com.inhouse.inhouse_manager.player.Tier;
 import com.inhouse.inhouse_manager.team.TeamBalancer.Assignment;
 import com.inhouse.inhouse_manager.team.TeamBalancer.Candidate;
 import com.inhouse.inhouse_manager.team.TeamBalancer.TeamSplit;
@@ -231,6 +233,68 @@ class TeamBalancerTest {
 
         assertThat(split.powerDiff()).isLessThan(1e-9);
         assertThat(split.blue().positionPenalty()).isEqualTo(split.red().positionPenalty());
+    }
+
+    /** 한 라인만 다이아(7)이고 나머지는 브론즈(2)인 사람. 주 포지션은 모두 미드로 둔다 */
+    private static Candidate laneSpecialist(long id, Position strongLane) {
+        Tier[] tiers = new Tier[5];
+        for (Position position : Position.values()) {
+            tiers[position.ordinal()] = position == strongLane ? Tier.DIAMOND : Tier.BRONZE;
+        }
+        LaneTiers lanes = new LaneTiers(tiers[0], tiers[1], tiers[2], tiers[3], tiers[4]);
+        return new Candidate(id, "p" + id, Position.MID, null, "골드", 4, 0.5, lanes);
+    }
+
+    @Test
+    void 라인별_티어가_있으면_맡은_라인의_티어로_전력을_계산한다() {
+        Candidate topDiamond = laneSpecialist(1, Position.TOP);
+
+        Assignment atTop = new Assignment(topDiamond, Position.TOP);
+        Assignment atMid = new Assignment(topDiamond, Position.MID);
+
+        assertThat(atTop.power()).isEqualTo(7.0);
+        assertThat(atTop.tierLabel()).isEqualTo("다이아몬드");
+        // 주 포지션(미드)이어도 미드 라인 티어(브론즈)로 계산하고, 포지션 감점은 없다
+        assertThat(atMid.power()).isEqualTo(2.0);
+        assertThat(atMid.positionPenalty()).isEqualTo(0.0);
+    }
+
+    @Test
+    void 라인별_티어가_있으면_주_포지션보다_잘하는_라인에_배치한다() {
+        // 라인마다 그 라인만 다이아인 사람이 두 명씩. 주 포지션은 모두 미드다
+        List<Candidate> candidates = new ArrayList<>();
+        long id = 1;
+        for (Position position : Position.values()) {
+            candidates.add(laneSpecialist(id++, position));
+            candidates.add(laneSpecialist(id++, position));
+        }
+
+        TeamSplit split = teamBalancer.split(candidates);
+
+        // 팀마다 다섯 명 모두 자기가 다이아인 라인을 맡는다 → 두 팀 다 전력 35
+        for (var lineup : List.of(split.blue(), split.red())) {
+            assertThat(lineup.assignments()).allMatch(a -> a.tierScore() == 7.0);
+            assertThat(lineup.power()).isEqualTo(35.0);
+        }
+        assertThat(split.powerDiff()).isLessThan(1e-9);
+    }
+
+    @Test
+    void 라인별_티어가_있는_사람과_없는_사람을_같이_나눈다() {
+        // 라인별 티어가 있는 5명(라인마다 한 명씩 다이아) + 없는 5명(라인마다 한 명씩 주포, 솔랭 다이아)
+        List<Candidate> candidates = new ArrayList<>();
+        long id = 1;
+        for (Position position : Position.values()) {
+            candidates.add(laneSpecialist(id++, position));
+            candidates.add(candidate(id++, position, 7));
+        }
+
+        TeamSplit split = teamBalancer.split(candidates);
+
+        // 모두 자기가 잘하는 라인(다이아)을 맡으면 두 팀 다 35, 감점 없음
+        assertThat(split.powerDiff()).isLessThan(1e-9);
+        assertThat(split.blue().power()).isEqualTo(35.0);
+        assertThat(split.blue().positionPenalty() + split.red().positionPenalty()).isEqualTo(0.0);
     }
 
     @Test

@@ -41,7 +41,7 @@
                  th:classappend="${#sets.contains(swappedPositions, a.position())} ? 'swapped'">
                 <span class="slot-pos" th:text="${a.position()}">TOP</span>
                 <span><span th:text="${a.player().name()}">철수</span>
-                    <small class="tier-text" th:text="${a.player().tierLabel()}">골드</small>
+                    <small class="tier-text" th:text="${a.tierLabel()}">골드</small>
                     <small class="swap-mark" th:if="${#sets.contains(swappedPositions, a.position())}">⇄ 교체</small></span>
                 <span class="badge" th:classappend="|fit-${a.fit()}|" th:text="${a.fitLabel()}">주</span>
             </div>
@@ -50,8 +50,9 @@
 
     <p class="muted"><strong>어떻게 나누나요?</strong> 사람마다 티어 점수(아이언 1 ~ 챌린저 10)에 내전 성적을 더해 전력을 매깁니다
         (내전에서 많이 이기면 최대 +2, 많이 지면 최대 -2). 언랭이나 티어 미입력은 오늘 참가자 평균으로 칩니다.
-        라인이 겹쳐서 주 포지션을 못 가면 약해지는 것도 계산합니다 (부 포지션 -1, 그 외 포지션 -2).
-        두 팀 전력 합이 비슷하고, 잘하는 사람이 한쪽에 몰리지 않게 나눈 뒤, 주 포지션을 많이 맡는 배치를 고릅니다.
+        라인별 티어를 넣은 사람은 맡은 라인의 티어로 계산하고, 선수 옆 티어도 그 라인의 티어입니다.
+        아직 안 넣은 사람은 솔랭 티어로 계산하되, 주 포지션이 아니면 깎습니다 (부 포지션 -1, 그 외 포지션 -2).
+        두 팀 전력 합이 비슷하고, 잘하는 사람이 한쪽에 몰리지 않게 나눈 뒤, 다들 잘하는 라인을 맡는 배치를 고릅니다.
         배지: <span class="badge fit-2">주</span> 주 포지션 · <span class="badge fit-1">부</span> 부 포지션
         · <span class="badge fit-0">-</span> 그 외</p>
     <p class="muted"><strong>랜덤으로 바꾸기</strong>: 같은 라인끼리(블루 탑 ↔ 레드 탑 …) 몇 쌍을 무작위로 맞바꿉니다.

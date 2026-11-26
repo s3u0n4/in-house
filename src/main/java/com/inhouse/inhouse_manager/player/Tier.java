@@ -3,6 +3,9 @@ package com.inhouse.inhouse_manager.player;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * 솔로 랭크 티어. score는 팀 나누기에 쓰는 점수이고, 언랭은 점수가 없다(null).
  * 점수가 없는 사람은 팀 나누기 때 그날 참가자들의 평균 티어 점수로 계산한다.
@@ -24,6 +27,11 @@ public enum Tier {
 
     private final String label;
     private final Integer score;
+
+    /** 점수가 있는 티어 (언랭 제외). 라인별 티어 선택지에 쓴다 */
+    public static List<Tier> ranked() {
+        return Arrays.stream(values()).filter(tier -> tier.score != null).toList();
+    }
 
     /** 평균 점수(예: 4.3)에 가장 가까운 티어 이름. 팀 평균 티어를 보여줄 때 쓴다 */
     public static String nearestLabel(double score) {

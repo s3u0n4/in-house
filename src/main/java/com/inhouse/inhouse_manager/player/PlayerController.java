@@ -117,7 +117,8 @@ public class PlayerController {
                     playerForm.getRiotId(),
                     playerForm.getMainPosition(),
                     playerForm.getSubPosition(),
-                    playerForm.getTier()
+                    playerForm.getTier(),
+                    playerForm.toLaneTiers()
             );
         } catch (IllegalArgumentException e) {
             bindingResult.rejectValue("riotId", "duplicate", e.getMessage());
@@ -156,7 +157,8 @@ public class PlayerController {
                     playerForm.getRiotId(),
                     playerForm.getMainPosition(),
                     playerForm.getSubPosition(),
-                    playerForm.getTier()
+                    playerForm.getTier(),
+                    playerForm.toLaneTiers()
             );
         } catch (IllegalArgumentException e) {
             bindingResult.rejectValue("riotId", "duplicate", e.getMessage());
@@ -178,6 +180,7 @@ public class PlayerController {
     private void addFormOptions(Model model, Long playerId) {
         model.addAttribute("positions", Position.values());
         model.addAttribute("tiers", Tier.values());
+        model.addAttribute("laneTierOptions", Tier.ranked());
         model.addAttribute("playerId", playerId);
     }
 }

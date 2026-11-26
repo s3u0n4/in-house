@@ -28,7 +28,7 @@
             <p class="field-error" th:if="${#fields.hasErrors('riotId')}" th:errors="*{riotId}">라이엇 ID 오류</p>
         </div>
         <div class="form-row">
-            <label class="title" for="tier">티어</label>
+            <label class="title" for="tier">솔랭 티어</label>
             <select th:field="*{tier}">
                 <option value="">선택하세요</option>
                 <option th:each="t : ${tiers}" th:value="${t}" th:text="${t.label}">골드</option>
@@ -52,11 +52,71 @@
                 </select>
             </div>
         </div>
+        <fieldset class="lane-fields">
+            <legend class="title">라인별 티어</legend>
+            <p class="muted">라인마다 본인이 생각하기에 어느 티어 정도로 하는지 골라 주세요. 팀 나누기는 이 값으로 계산합니다.
+                <button type="button" class="btn small" id="fill-lanes">솔랭 티어로 빈칸 채우기</button></p>
+            <div class="lane-grid">
+                <div class="form-row">
+                    <label class="title" for="topTier">탑</label>
+                    <select th:field="*{topTier}" class="lane-tier">
+                        <option value="">선택</option>
+                        <option th:each="t : ${laneTierOptions}" th:value="${t}" th:text="${t.label}">골드</option>
+                    </select>
+                    <p class="field-error" th:if="${#fields.hasErrors('topTier')}" th:errors="*{topTier}">탑 티어 오류</p>
+                </div>
+                <div class="form-row">
+                    <label class="title" for="jungleTier">정글</label>
+                    <select th:field="*{jungleTier}" class="lane-tier">
+                        <option value="">선택</option>
+                        <option th:each="t : ${laneTierOptions}" th:value="${t}" th:text="${t.label}">골드</option>
+                    </select>
+                    <p class="field-error" th:if="${#fields.hasErrors('jungleTier')}" th:errors="*{jungleTier}">정글 티어 오류</p>
+                </div>
+                <div class="form-row">
+                    <label class="title" for="midTier">미드</label>
+                    <select th:field="*{midTier}" class="lane-tier">
+                        <option value="">선택</option>
+                        <option th:each="t : ${laneTierOptions}" th:value="${t}" th:text="${t.label}">골드</option>
+                    </select>
+                    <p class="field-error" th:if="${#fields.hasErrors('midTier')}" th:errors="*{midTier}">미드 티어 오류</p>
+                </div>
+                <div class="form-row">
+                    <label class="title" for="adcTier">원딜</label>
+                    <select th:field="*{adcTier}" class="lane-tier">
+                        <option value="">선택</option>
+                        <option th:each="t : ${laneTierOptions}" th:value="${t}" th:text="${t.label}">골드</option>
+                    </select>
+                    <p class="field-error" th:if="${#fields.hasErrors('adcTier')}" th:errors="*{adcTier}">원딜 티어 오류</p>
+                </div>
+                <div class="form-row">
+                    <label class="title" for="supportTier">서폿</label>
+                    <select th:field="*{supportTier}" class="lane-tier">
+                        <option value="">선택</option>
+                        <option th:each="t : ${laneTierOptions}" th:value="${t}" th:text="${t.label}">골드</option>
+                    </select>
+                    <p class="field-error" th:if="${#fields.hasErrors('supportTier')}" th:errors="*{supportTier}">서폿 티어 오류</p>
+                </div>
+            </div>
+            <p class="field-error" th:if="${#fields.hasErrors('laneTiersRanked')}" th:errors="*{laneTiersRanked}">언랭 오류</p>
+        </fieldset>
         <div class="actions">
             <button class="btn primary" type="submit" th:text="${editing} ? '저장' : '등록'">등록</button>
             <a class="btn" th:href="${editing} ? @{/players/{id}(id=${playerId})} : @{/players}">취소</a>
         </div>
     </form>
 </main>
+
+<script>
+    // 솔랭 티어를 라인별 티어의 빈칸에 복사한다 (이미 고른 칸은 그대로). 언랭은 라인별 티어에 없어서 복사하지 않는다
+    document.getElementById('fill-lanes').addEventListener('click', function () {
+        var tier = document.getElementById('tier').value;
+        document.querySelectorAll('.lane-tier').forEach(function (select) {
+            if (!select.value && select.querySelector('option[value="' + tier + '"]')) {
+                select.value = tier;
+            }
+        });
+    });
+</script>
 </body>
 </html>

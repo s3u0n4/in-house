@@ -1,5 +1,6 @@
 package com.inhouse.inhouse_manager.team;
 
+import com.inhouse.inhouse_manager.player.LaneTiers;
 import com.inhouse.inhouse_manager.player.Position;
 import com.inhouse.inhouse_manager.player.Tier;
 import org.springframework.stereotype.Component;
@@ -24,20 +25,30 @@ public class TeamBalancer {
     static final double DISTRIBUTION_WEIGHT = 0.5;
     /** 불균형 점수가 최소값 + 이 값 이내면 "비슷하다"고 보고 포지션 적합도로 고른다 */
     static final double COST_TOLERANCE = 0.5;
-    /** 주 포지션이 아닐 때 빼는 전력 점수. 부 포지션이면 1번, 그 외 포지션이면 2번 뺀다 (티어 1~2단계) */
+    /**
+     * 라인별 티어가 없는 사람이 주 포지션이 아닐 때 빼는 전력 점수. 부 포지션이면 1번, 그 외 포지션이면 2번 뺀다 (티어 1~2단계).
+     * 라인별 티어를 넣은 사람은 그 라인의 티어를 그대로 쓰고 감점하지 않는다.
+     */
     static final double OFF_ROLE_PENALTY = 1.0;
 
     private static final List<int[]> POSITION_ORDERS = permutations(TEAM_SIZE);
 
     /**
-     * tierScore: 티어 점수 (언랭이나 미입력은 TeamService가 참가자 평균으로 채워서 넘긴다)
+     * tierScore: 솔랭 티어 점수 (언랭이나 미입력은 TeamService가 참가자 평균으로 채워서 넘긴다)
      * rating: 내전 보정 승률 (승+1)/(경기+2)
+     * laneTiers: 라인별 티어. 다 넣은 사람만 있고, 아니면 null (그때는 솔랭 티어와 주/부 포지션으로 계산)
      */
     public record Candidate(Long playerId, String name, Position mainPosition, Position subPosition,
-                            String tierLabel, double tierScore, double rating) {
-        /** 전력 점수 = 티어 점수 + 내전 승률 보정 */
-        public double power() {
-            return tierScore + (rating - 0.5) * WIN_RATE_WEIGHT;
+                            String tierLabel, double tierScore, double rating, LaneTiers laneTiers) {
+        /** 라인별 티어가 없는 후보 */
+        public Candidate(Long playerId, String name, Position mainPosition, Position subPosition,
+                         String tierLabel, double tierScore, double rating) {
+            this(playerId, name, mainPosition, subPosition, tierLabel, tierScore, rating, null);
+        }
+
+        /** 내전 승률 보정. 보정 승률이 0.5에서 멀어질수록 최대 ±2 */
+        public double ratingBonus() {
+            return (rating - 0.5) * WIN_RATE_WEIGHT;
         }
     }
 
@@ -48,14 +59,24 @@ public class TeamBalancer {
             return 0;
         }
 
-        /** 포지션 감점. 주 포지션 0, 부 포지션 -1, 그 외 -2 */
-        public double positionPenalty() {
-            return (2 - fit()) * OFF_ROLE_PENALTY;
+        /** 이 포지션에서의 티어 점수. 라인별 티어가 있으면 그 라인의 티어, 없으면 솔랭 티어 */
+        public double tierScore() {
+            return player.laneTiers() != null ? player.laneTiers().of(position).getScore() : player.tierScore();
         }
 
-        /** 이 포지션을 맡았을 때의 전력 = 전력 점수 - 포지션 감점 */
+        /** 화면에 보여줄 티어 이름 (라인별 티어가 있으면 그 라인의 티어) */
+        public String tierLabel() {
+            return player.laneTiers() != null ? player.laneTiers().of(position).getLabel() : player.tierLabel();
+        }
+
+        /** 포지션 감점. 라인별 티어가 없는 사람만: 주 포지션 0, 부 포지션 -1, 그 외 -2 */
+        public double positionPenalty() {
+            return player.laneTiers() != null ? 0 : (2 - fit()) * OFF_ROLE_PENALTY;
+        }
+
+        /** 이 포지션을 맡았을 때의 전력 = 이 포지션의 티어 점수 + 내전 승률 보정 - 포지션 감점 */
         public double power() {
-            return player.power() - positionPenalty();
+            return tierScore() + player.ratingBonus() - positionPenalty();
         }
 
         public String fitLabel() {
@@ -79,7 +100,7 @@ public class TeamBalancer {
         }
 
         public double averageTier() {
-            return assignments.stream().mapToDouble(a -> a.player().tierScore()).average().orElse(0);
+            return assignments.stream().mapToDouble(Assignment::tierScore).average().orElse(0);
         }
 
         /** 평균 티어 점수에 가장 가까운 티어 이름 (예: 골드) */
@@ -97,7 +118,7 @@ public class TeamBalancer {
 
         /** 티어 점수를 높은 순으로 정렬한 목록 (분포 비교용) */
         List<Double> tierScoresDescending() {
-            return assignments.stream().map(a -> a.player().tierScore()).sorted(Comparator.reverseOrder()).toList();
+            return assignments.stream().map(Assignment::tierScore).sorted(Comparator.reverseOrder()).toList();
         }
     }
 
@@ -129,6 +150,11 @@ public class TeamBalancer {
         int fit() {
             return blue.fit() + red.fit();
         }
+
+        /** 두 팀 전력의 합. 균형이 비슷하면 이 값이 큰 쪽(다들 잘하는 라인을 맡는 쪽)을 고른다. 소수점 오차를 없애려고 반올림한다 */
+        long totalPower() {
+            return Math.round((blue.power() + red.power()) * 1000);
+        }
     }
 
     public TeamSplit split(List<Candidate> candidates) {
@@ -153,7 +179,8 @@ public class TeamBalancer {
         double minCost = splits.stream().mapToDouble(TeamSplit::cost).min().orElseThrow();
         return splits.stream()
                 .filter(split -> split.cost() <= minCost + COST_TOLERANCE + 1e-9)
-                .max(Comparator.comparingInt(TeamSplit::fit)
+                .max(Comparator.comparingLong(TeamSplit::totalPower)
+                        .thenComparingInt(TeamSplit::fit)
                         .thenComparing(Comparator.comparingDouble(TeamSplit::cost).reversed()))
                 .orElseThrow();
     }
@@ -181,8 +208,8 @@ public class TeamBalancer {
     }
 
     /**
-     * 5명을 5개 포지션에 배치하는 120가지 중 적합도가 가장 높은 배치.
-     * 포지션 감점은 (2 - 적합도)에 비례하므로, 적합도가 가장 높은 배치가 곧 팀 전력이 가장 높은 배치다.
+     * 5명을 5개 포지션에 배치하는 120가지 중 팀 전력이 가장 높은 배치. 전력이 같으면 주 포지션이 많은 배치.
+     * 라인별 티어가 있는 사람은 잘하는 라인으로, 없는 사람은 주 포지션 → 부 포지션 순으로 간다.
      */
     private Lineup bestLineup(List<Candidate> members) {
         Position[] positions = Position.values();
@@ -194,7 +221,8 @@ public class TeamBalancer {
             }
             assignments.sort(Comparator.comparing(Assignment::position));
             Lineup lineup = new Lineup(assignments);
-            if (best == null || lineup.fit() > best.fit()) {
+            if (best == null || lineup.power() > best.power() + 1e-9
+                    || (Math.abs(lineup.power() - best.power()) <= 1e-9 && lineup.fit() > best.fit())) {
                 best = lineup;
             }
         }

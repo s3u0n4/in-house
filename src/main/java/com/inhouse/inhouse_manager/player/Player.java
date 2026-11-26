@@ -32,18 +32,23 @@ public class Player {
     @Enumerated(EnumType.STRING)
     private Tier tier;
 
+    /** 라인별 티어 (팀 나누기용). 이 기능 전에 등록한 플레이어는 null */
+    @Embedded
+    private LaneTiers laneTiers;
+
     /**
      * 삭제한 시각. 값이 있으면 목록에서는 빠지고 지난 경기 기록에만 "(삭제됨)"으로 남는다 (소프트 삭제).
      * 관리자가 휴지통에서 되돌릴 수 있다.
      */
     private LocalDateTime deletedAt;
 
-    public Player(String name, String riotId, Position mainPosition, Position subPosition, Tier tier) {
+    public Player(String name, String riotId, Position mainPosition, Position subPosition, Tier tier, LaneTiers laneTiers) {
         this.name = name;
         this.riotId = riotId;
         this.mainPosition = mainPosition;
         this.subPosition = subPosition;
         this.tier = tier;
+        this.laneTiers = laneTiers;
     }
 
     public boolean isDeleted() {
@@ -77,11 +82,17 @@ public class Player {
         return "deleted:" + id + ":";
     }
 
-    public void update(String name, String riotId, Position mainPosition, Position subPosition, Tier tier) {
+    public void update(String name, String riotId, Position mainPosition, Position subPosition, Tier tier, LaneTiers laneTiers) {
         this.name = name;
         this.riotId = riotId;
         this.mainPosition = mainPosition;
         this.subPosition = subPosition;
         this.tier = tier;
+        this.laneTiers = laneTiers;
+    }
+
+    /** 라인별 티어를 다 넣었는지. 안 넣었으면 팀 나누기는 솔랭 티어와 주/부 포지션으로 계산한다 */
+    public boolean hasLaneTiers() {
+        return laneTiers != null && laneTiers.isComplete();
     }
 }

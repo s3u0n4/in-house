@@ -4,6 +4,7 @@ import com.inhouse.inhouse_manager.common.NotFoundException;
 import com.inhouse.inhouse_manager.match.Match;
 import com.inhouse.inhouse_manager.match.MatchRepository;
 import com.inhouse.inhouse_manager.match.Team;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -25,9 +26,41 @@ public class PlayerServiceTest {
     @Autowired
     MatchRepository matchRepository;
 
+    @Autowired
+    EntityManager entityManager;
+
+    static final LaneTiers LANES = new LaneTiers(Tier.SILVER, Tier.BRONZE, Tier.PLATINUM, Tier.GOLD, Tier.IRON);
+
+    @Test
+    void 라인별_티어를_저장하고_다시_읽는다() {
+        Long id = playerService.register("철수", "철수#KR1", Position.MID, Position.TOP, Tier.GOLD, LANES);
+        // 메모리에 남은 객체가 아니라 DB에서 다시 읽어 오게 비운다
+        entityManager.flush();
+        entityManager.clear();
+
+        Player found = playerService.findById(id);
+        assertThat(found.getLaneTiers()).isEqualTo(LANES);
+        assertThat(found.getLaneTiers().of(Position.MID)).isEqualTo(Tier.PLATINUM);
+        assertThat(found.hasLaneTiers()).isTrue();
+    }
+
+    @Test
+    void 라인별_티어가_없던_플레이어에게_나중에_넣을_수_있다() {
+        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD, null);
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(playerService.findById(id).hasLaneTiers()).isFalse();
+
+        playerService.update(id, "철수", "철수#KR1", Position.MID, null, Tier.GOLD, LANES);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(playerService.findById(id).getLaneTiers()).isEqualTo(LANES);
+    }
+
     @Test
     void 플레이어를_등록한다(){
-        Long id = playerService.register("철수","철수#KR1", Position.MID, Position.TOP, Tier.GOLD);
+        Long id = playerService.register("철수","철수#KR1", Position.MID, Position.TOP, Tier.GOLD, null);
 
         Player found = playerService.findById(id);
         assertThat(found.getRiotId()).isEqualTo("철수#KR1");
@@ -36,7 +69,7 @@ public class PlayerServiceTest {
 
     @Test
     void 등록할_때_앞뒤_공백을_지운다(){
-        Long id = playerService.register("  철수 ", " 철수#KR1  ", Position.MID, null, Tier.GOLD);
+        Long id = playerService.register("  철수 ", " 철수#KR1  ", Position.MID, null, Tier.GOLD, null);
 
         Player found = playerService.findById(id);
         assertThat(found.getName()).isEqualTo("철수");
@@ -45,9 +78,9 @@ public class PlayerServiceTest {
 
     @Test
     void 같은_라이엇ID로_등록하면_예외가_발생한다(){
-        playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
+        playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD, null);
 
-        assertThatThrownBy(() -> playerService.register("영희", "철수#KR1", Position.TOP, null, Tier.GOLD))
+        assertThatThrownBy(() -> playerService.register("영희", "철수#KR1", Position.TOP, null, Tier.GOLD, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("이미 등록된");
     }
@@ -60,9 +93,9 @@ public class PlayerServiceTest {
 
     @Test
     void 플레이어_정보를_수정한다(){
-        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
+        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD, null);
 
-        playerService.update(id, "철수2", "철수#KR2", Position.TOP, Position.JUNGLE, Tier.DIAMOND);
+        playerService.update(id, "철수2", "철수#KR2", Position.TOP, Position.JUNGLE, Tier.DIAMOND, null);
 
         Player found = playerService.findById(id);
         assertThat(found.getName()).isEqualTo("철수2");
@@ -74,26 +107,26 @@ public class PlayerServiceTest {
 
     @Test
     void 자기_라이엇ID를_그대로_두고_수정할_수_있다(){
-        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
+        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD, null);
 
-        playerService.update(id, "철수2", "철수#KR1", Position.MID, null, Tier.GOLD);
+        playerService.update(id, "철수2", "철수#KR1", Position.MID, null, Tier.GOLD, null);
 
         assertThat(playerService.findById(id).getName()).isEqualTo("철수2");
     }
 
     @Test
     void 다른_플레이어의_라이엇ID로_수정하면_예외가_발생한다(){
-        playerService.register("영희", "영희#KR1", Position.TOP, null, Tier.GOLD);
-        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
+        playerService.register("영희", "영희#KR1", Position.TOP, null, Tier.GOLD, null);
+        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD, null);
 
-        assertThatThrownBy(() -> playerService.update(id, "철수", "영희#KR1", Position.MID, null, Tier.GOLD))
+        assertThatThrownBy(() -> playerService.update(id, "철수", "영희#KR1", Position.MID, null, Tier.GOLD, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("이미 등록된");
     }
 
     @Test
     void 경기_기록이_없는_플레이어도_삭제_표시만_하고_목록에서_뺀다(){
-        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
+        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD, null);
 
         playerService.delete(id);
 
@@ -104,7 +137,7 @@ public class PlayerServiceTest {
 
     @Test
     void 경기_기록이_있는_플레이어를_삭제하면_목록에서만_빠지고_기록은_남는다(){
-        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
+        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD, null);
         Match match = new Match(LocalDate.now(), Team.BLUE);
         match.addParticipant(playerService.findById(id), Team.BLUE, Position.MID);
         matchRepository.save(match);
@@ -121,13 +154,13 @@ public class PlayerServiceTest {
 
     @Test
     void 삭제된_플레이어의_라이엇ID로_다시_등록할_수_있다(){
-        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
+        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD, null);
         Match match = new Match(LocalDate.now(), Team.BLUE);
         match.addParticipant(playerService.findById(id), Team.BLUE, Position.MID);
         matchRepository.save(match);
         playerService.delete(id);
 
-        Long again = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
+        Long again = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD, null);
 
         assertThat(again).isNotEqualTo(id);
         assertThat(playerService.findById(again).getRiotId()).isEqualTo("철수#KR1");
@@ -135,12 +168,12 @@ public class PlayerServiceTest {
 
     @Test
     void 여러_명을_한_번에_수정한다(){
-        Long a = playerService.register("철수", "철수#KR1", Position.MID, null, null);
-        Long b = playerService.register("영희", "영희#KR1", Position.TOP, null, null);
+        Long a = playerService.register("철수", "철수#KR1", Position.MID, null, null, null);
+        Long b = playerService.register("영희", "영희#KR1", Position.TOP, null, null, null);
 
         playerService.updateAll(List.of(
-                new PlayerUpdate(a, "철수", "철수#KR1", Position.MID, Position.TOP, Tier.DIAMOND),
-                new PlayerUpdate(b, "영희2", "영희#KR2", Position.JUNGLE, null, Tier.SILVER)));
+                new PlayerUpdate(a, "철수", "철수#KR1", Position.MID, Position.TOP, Tier.DIAMOND, null),
+                new PlayerUpdate(b, "영희2", "영희#KR2", Position.JUNGLE, null, Tier.SILVER, null)));
 
         assertThat(playerService.findById(a).getTier()).isEqualTo(Tier.DIAMOND);
         assertThat(playerService.findById(a).getSubPosition()).isEqualTo(Position.TOP);
@@ -151,12 +184,12 @@ public class PlayerServiceTest {
 
     @Test
     void 여러_명_수정에서_같은_라이엇ID가_두_줄에_있으면_아무것도_바꾸지_않는다(){
-        Long a = playerService.register("철수", "철수#KR1", Position.MID, null, null);
-        Long b = playerService.register("영희", "영희#KR1", Position.TOP, null, null);
+        Long a = playerService.register("철수", "철수#KR1", Position.MID, null, null, null);
+        Long b = playerService.register("영희", "영희#KR1", Position.TOP, null, null, null);
 
         assertThatThrownBy(() -> playerService.updateAll(List.of(
-                new PlayerUpdate(a, "철수2", "같은#KR1", Position.MID, null, Tier.GOLD),
-                new PlayerUpdate(b, "영희", " 같은#KR1 ", Position.TOP, null, Tier.GOLD))))
+                new PlayerUpdate(a, "철수2", "같은#KR1", Position.MID, null, Tier.GOLD, null),
+                new PlayerUpdate(b, "영희", " 같은#KR1 ", Position.TOP, null, Tier.GOLD, null))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("두 줄");
 
@@ -165,11 +198,11 @@ public class PlayerServiceTest {
 
     @Test
     void 목록_저장에서_체크한_플레이어를_삭제하고_나머지는_수정한다(){
-        Long a = playerService.register("철수", "철수#KR1", Position.MID, null, null);
-        Long b = playerService.register("영희", "영희#KR1", Position.TOP, null, Tier.GOLD);
+        Long a = playerService.register("철수", "철수#KR1", Position.MID, null, null, null);
+        Long b = playerService.register("영희", "영희#KR1", Position.TOP, null, Tier.GOLD, null);
 
         // 철수를 지우면서 영희가 철수의 라이엇 ID를 가져간다 → 삭제가 먼저 반영돼야 한다
-        playerService.saveAll(List.of(new PlayerUpdate(b, "영희", "철수#KR1", Position.TOP, null, Tier.GOLD)), List.of(a));
+        playerService.saveAll(List.of(new PlayerUpdate(b, "영희", "철수#KR1", Position.TOP, null, Tier.GOLD, null)), List.of(a));
 
         assertThat(playerService.findById(a).isDeleted()).isTrue();
         assertThat(playerService.findById(b).getRiotId()).isEqualTo("철수#KR1");
@@ -177,13 +210,13 @@ public class PlayerServiceTest {
 
     @Test
     void 목록_저장에서_경기_기록이_있는_플레이어는_기록을_남기고_삭제한다(){
-        Long a = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
-        Long b = playerService.register("영희", "영희#KR1", Position.TOP, null, Tier.GOLD);
+        Long a = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD, null);
+        Long b = playerService.register("영희", "영희#KR1", Position.TOP, null, Tier.GOLD, null);
         Match match = new Match(LocalDate.now(), Team.BLUE);
         match.addParticipant(playerService.findById(a), Team.BLUE, Position.MID);
         matchRepository.save(match);
 
-        playerService.saveAll(List.of(new PlayerUpdate(b, "영희2", "철수#KR1", Position.TOP, null, Tier.GOLD)), List.of(a));
+        playerService.saveAll(List.of(new PlayerUpdate(b, "영희2", "철수#KR1", Position.TOP, null, Tier.GOLD, null)), List.of(a));
 
         assertThat(playerService.findById(a).isDeleted()).isTrue();
         assertThat(playerService.findById(b).getName()).isEqualTo("영희2");
@@ -192,7 +225,7 @@ public class PlayerServiceTest {
 
     @Test
     void 관리자는_삭제한_플레이어를_라이엇ID까지_원래대로_되돌린다(){
-        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
+        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD, null);
         playerService.delete(id);
 
         assertThat(playerService.findDeleted()).extracting(Player::getId).containsExactly(id);
@@ -209,9 +242,9 @@ public class PlayerServiceTest {
 
     @Test
     void 그사이_같은_라이엇ID로_등록한_사람이_있으면_되돌리지_않는다(){
-        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
+        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD, null);
         playerService.delete(id);
-        playerService.register("새철수", "철수#KR1", Position.TOP, null, Tier.GOLD);
+        playerService.register("새철수", "철수#KR1", Position.TOP, null, Tier.GOLD, null);
 
         assertThatThrownBy(() -> playerService.restore(id))
                 .isInstanceOf(IllegalStateException.class)
@@ -221,7 +254,7 @@ public class PlayerServiceTest {
 
     @Test
     void 삭제하지_않은_플레이어는_되돌릴_수_없다(){
-        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD);
+        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, Tier.GOLD, null);
 
         assertThatThrownBy(() -> playerService.restore(id)).isInstanceOf(NotFoundException.class);
     }

@@ -38,7 +38,7 @@ class StatsServiceTest {
     void setUp() {
         ids = new ArrayList<>();
         for (int i = 1; i <= 11; i++) {
-            ids.add(playerRepository.save(new Player("플레이어" + i, "player#" + i, Position.MID, null, Tier.GOLD)).getId());
+            ids.add(playerRepository.save(new Player("플레이어" + i, "player#" + i, Position.MID, null, Tier.GOLD, null)).getId());
         }
     }
 

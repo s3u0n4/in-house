@@ -16,6 +16,13 @@
                 주 포지션 <strong th:text="${player.mainPosition}">ADC</strong>
                 · 부 포지션 <strong th:text="${player.subPosition} ?: '-'">SUPPORT</strong>
                 · 티어 <span class="tier" th:classappend="|tier-${player.tier}|" th:text="${player.tier?.label} ?: '-'">골드</span>
+                <br><span class="lane-tiers" th:if="${player.hasLaneTiers()}">라인별 티어:
+                    탑 <strong th:text="${player.laneTiers.top().label}">실버</strong>
+                    · 정글 <strong th:text="${player.laneTiers.jungle().label}">실버</strong>
+                    · 미드 <strong th:text="${player.laneTiers.mid().label}">골드</strong>
+                    · 원딜 <strong th:text="${player.laneTiers.adc().label}">실버</strong>
+                    · 서폿 <strong th:text="${player.laneTiers.support().label}">브론즈</strong></span>
+                <span class="lane-tiers" th:unless="${player.hasLaneTiers()}">라인별 티어: 아직 입력 안 함 (수정에서 입력)</span>
             </p>
         </div>
         <!-- 삭제된 플레이어는 지난 경기 기록에서 들어올 수만 있고, 수정이나 삭제는 할 수 없다 -->
