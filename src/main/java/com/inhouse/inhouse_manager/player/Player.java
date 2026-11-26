@@ -28,11 +28,10 @@ public class Player {
     @Enumerated(EnumType.STRING)
     private Position subPosition;
 
-    // 티어 기능 전에 등록한 플레이어는 값이 없어서 DB에서는 null을 허용한다 (새로 등록할 때는 폼에서 필수)
-    @Enumerated(EnumType.STRING)
-    private Tier tier;
-
-    /** 라인별 티어 (팀 나누기용). 이 기능 전에 등록한 플레이어는 null */
+    /**
+     * 라인별 티어 (팀 나누기용). 이 기능 전에 등록한 플레이어는 null.
+     * (예전에 있던 솔랭 티어는 2026-11-26에 뺐다. DB의 tier 컬럼은 남아 있지만 쓰지 않는다)
+     */
     @Embedded
     private LaneTiers laneTiers;
 
@@ -42,12 +41,11 @@ public class Player {
      */
     private LocalDateTime deletedAt;
 
-    public Player(String name, String riotId, Position mainPosition, Position subPosition, Tier tier, LaneTiers laneTiers) {
+    public Player(String name, String riotId, Position mainPosition, Position subPosition, LaneTiers laneTiers) {
         this.name = name;
         this.riotId = riotId;
         this.mainPosition = mainPosition;
         this.subPosition = subPosition;
-        this.tier = tier;
         this.laneTiers = laneTiers;
     }
 
@@ -82,17 +80,26 @@ public class Player {
         return "deleted:" + id + ":";
     }
 
-    public void update(String name, String riotId, Position mainPosition, Position subPosition, Tier tier, LaneTiers laneTiers) {
+    public void update(String name, String riotId, Position mainPosition, Position subPosition, LaneTiers laneTiers) {
         this.name = name;
         this.riotId = riotId;
         this.mainPosition = mainPosition;
         this.subPosition = subPosition;
-        this.tier = tier;
         this.laneTiers = laneTiers;
     }
 
-    /** 라인별 티어를 다 넣었는지. 안 넣었으면 팀 나누기는 솔랭 티어와 주/부 포지션으로 계산한다 */
+    /** 라인별 티어를 다 넣었는지. 안 넣었으면 팀 나누기는 그날 참가자 평균으로 계산한다 */
     public boolean hasLaneTiers() {
         return laneTiers != null && laneTiers.isComplete();
+    }
+
+    /** 주 포지션의 라인 티어 (목록 화면의 티어 배지 색). 라인별 티어가 없으면 null */
+    public Tier getMainLaneTier() {
+        return hasLaneTiers() ? laneTiers.of(mainPosition) : null;
+    }
+
+    /** 주 포지션의 라인 티어 이름. 예: "다이아몬드", "마스터 350LP". 없으면 "-" */
+    public String getMainLaneLabel() {
+        return hasLaneTiers() ? laneTiers.labelOf(mainPosition) : "-";
     }
 }

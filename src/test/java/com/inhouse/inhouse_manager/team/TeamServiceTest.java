@@ -35,11 +35,16 @@ class TeamServiceTest {
 
     List<Long> ids;
 
+    /** 다섯 라인 모두 같은 티어 */
+    private static LaneTiers allLanes(Tier tier) {
+        return new LaneTiers(tier, tier, tier, tier, tier);
+    }
+
     @BeforeEach
     void setUp() {
         ids = new ArrayList<>();
         for (int i = 1; i <= 10; i++) {
-            ids.add(playerRepository.save(new Player("플레이어" + i, "player#" + i, Position.MID, null, Tier.GOLD, null)).getId());
+            ids.add(playerRepository.save(new Player("플레이어" + i, "player#" + i, Position.MID, null, allLanes(Tier.GOLD))).getId());
         }
     }
 
@@ -54,7 +59,7 @@ class TeamServiceTest {
     @Test
     void 라인별_티어를_넣은_플레이어는_그_라인의_티어로_보여준다() {
         // 솔랭은 골드지만 탑만 챌린저라고 입력한 사람 → 탑에 배치되고 "챌린저"로 보인다
-        Long topAce = playerRepository.save(new Player("탑장인", "top#1", Position.MID, null, Tier.GOLD,
+        Long topAce = playerRepository.save(new Player("탑장인", "top#1", Position.MID, null,
                 new LaneTiers(Tier.CHALLENGER, Tier.GOLD, Tier.GOLD, Tier.GOLD, Tier.GOLD))).getId();
         List<Long> withAce = new ArrayList<>(ids.subList(0, 9));
         withAce.add(topAce);
@@ -86,29 +91,46 @@ class TeamServiceTest {
     }
 
     @Test
-    void 언랭과_티어_미입력은_참가자_평균_티어로_계산한다() {
-        // 아이언(1점) 4명 + 다이아몬드(7점) 4명 → 평균 4점. 언랭 1명, 미입력(null) 1명
+    void 라인별_티어가_없는_플레이어는_참가자_주_라인_티어_평균으로_계산한다() {
+        // 아이언(1점) 4명 + 다이아몬드(7점) 4명 → 평균 4점. 라인별 티어가 없는 옛 플레이어 2명
         List<Long> mixed = new ArrayList<>();
         for (int i = 1; i <= 4; i++) {
-            mixed.add(playerRepository.save(new Player("아이언" + i, "iron#" + i, Position.TOP, null, Tier.IRON, null)).getId());
-            mixed.add(playerRepository.save(new Player("다이아" + i, "dia#" + i, Position.MID, null, Tier.DIAMOND, null)).getId());
+            mixed.add(playerRepository.save(new Player("아이언" + i, "iron#" + i, Position.TOP, null, allLanes(Tier.IRON))).getId());
+            mixed.add(playerRepository.save(new Player("다이아" + i, "dia#" + i, Position.MID, null, allLanes(Tier.DIAMOND))).getId());
         }
-        Long unranked = playerRepository.save(new Player("언랭", "unranked#1", Position.ADC, null, Tier.UNRANKED, null)).getId();
-        Long noTier = playerRepository.save(new Player("미입력", "notier#1", Position.SUPPORT, null, null, null)).getId();
-        mixed.add(unranked);
-        mixed.add(noTier);
+        Long old1 = playerRepository.save(new Player("옛날1", "old#1", Position.ADC, null, null)).getId();
+        Long old2 = playerRepository.save(new Player("옛날2", "old#2", Position.SUPPORT, null, null)).getId();
+        mixed.add(old1);
+        mixed.add(old2);
 
         TeamSplit split = teamService.split(mixed);
 
         List<Assignment> all = Stream.concat(split.blue().assignments().stream(), split.red().assignments().stream()).toList();
-        Candidate unrankedCandidate = all.stream().map(Assignment::player)
-                .filter(candidate -> candidate.playerId().equals(unranked)).findFirst().orElseThrow();
-        Candidate noTierCandidate = all.stream().map(Assignment::player)
-                .filter(candidate -> candidate.playerId().equals(noTier)).findFirst().orElseThrow();
-        assertThat(unrankedCandidate.tierScore()).isEqualTo(4.0);
-        assertThat(unrankedCandidate.tierLabel()).isEqualTo("언랭");
-        assertThat(noTierCandidate.tierScore()).isEqualTo(4.0);
-        assertThat(noTierCandidate.tierLabel()).isEqualTo("미입력");
+        for (Long old : List.of(old1, old2)) {
+            Candidate candidate = all.stream().map(Assignment::player)
+                    .filter(c -> c.playerId().equals(old)).findFirst().orElseThrow();
+            assertThat(candidate.laneTiers()).isNull();
+            assertThat(candidate.tierScore()).isEqualTo(4.0);
+            assertThat(candidate.tierLabel()).isEqualTo("미입력");
+        }
+    }
+
+    @Test
+    void 마스터_이상은_LP로_점수를_계산한다() {
+        // 탑만 챌린저 1000LP(10점)라고 적은 사람 → 탑에 배치되고 "챌린저 1000LP"로 보인다
+        Long ace = playerRepository.save(new Player("챌린저", "chall#1", Position.MID, null,
+                new LaneTiers(Tier.CHALLENGER, 1000, Tier.GOLD, null, Tier.GOLD, null, Tier.GOLD, null, Tier.GOLD, null))).getId();
+        List<Long> withAce = new ArrayList<>(ids.subList(0, 9));
+        withAce.add(ace);
+
+        TeamSplit split = teamService.split(withAce);
+
+        Assignment aceAt = Stream.concat(split.blue().assignments().stream(), split.red().assignments().stream())
+                .filter(a -> a.player().playerId().equals(ace))
+                .findFirst().orElseThrow();
+        assertThat(aceAt.position()).isEqualTo(Position.TOP);
+        assertThat(aceAt.tierScore()).isEqualTo(10.0);
+        assertThat(aceAt.tierLabel()).isEqualTo("챌린저 1000LP");
     }
 
     @Test
@@ -130,7 +152,7 @@ class TeamServiceTest {
         Position[] mains = {Position.TOP, Position.JUNGLE, Position.MID, Position.ADC, Position.SUPPORT,
                 Position.TOP, Position.JUNGLE, Position.MID, Position.ADC, Position.SUPPORT};
         for (int i = 0; i < tiers.length; i++) {
-            spread.add(playerRepository.save(new Player("p" + i, "spread#" + i, mains[i], null, tiers[i], null)).getId());
+            spread.add(playerRepository.save(new Player("p" + i, "spread#" + i, mains[i], null, allLanes(tiers[i]))).getId());
         }
         TeamSplit split = teamService.split(spread);
 

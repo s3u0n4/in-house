@@ -1,17 +1,19 @@
 package com.inhouse.inhouse_manager.player;
 
-import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.stream.Stream;
-
 @Getter
 @Setter
 public class PlayerForm {
+    /** LP 입력 범위. 한국 서버 챌린저 1등도 대개 이 안에 든다 */
+    static final int MAX_LP = 3000;
+
     @NotBlank(message = "이름을 입력하세요.")
     @Size(max = 30, message = "이름은 30자 이하로 입력하세요.")
     private String name;
@@ -24,42 +26,55 @@ public class PlayerForm {
     private Position mainPosition;
     private Position subPosition;
 
-    @NotNull(message = "티어를 선택하세요.")
-    private Tier tier;
-
     // 라인별 티어: 본인이 생각하기에 그 라인을 어느 티어 정도로 하는지 (팀 나누기에 쓴다)
+    // LP는 마스터 이상일 때만 적을 수 있고, 비워도 된다
     @NotNull(message = "탑 티어를 선택하세요.")
     private Tier topTier;
+    @Min(value = 0, message = "LP는 0 이상으로 입력하세요.") @Max(value = MAX_LP, message = "LP는 3000 이하로 입력하세요.")
+    private Integer topLp;
     @NotNull(message = "정글 티어를 선택하세요.")
     private Tier jungleTier;
+    @Min(value = 0, message = "LP는 0 이상으로 입력하세요.") @Max(value = MAX_LP, message = "LP는 3000 이하로 입력하세요.")
+    private Integer jungleLp;
     @NotNull(message = "미드 티어를 선택하세요.")
     private Tier midTier;
+    @Min(value = 0, message = "LP는 0 이상으로 입력하세요.") @Max(value = MAX_LP, message = "LP는 3000 이하로 입력하세요.")
+    private Integer midLp;
     @NotNull(message = "원딜 티어를 선택하세요.")
     private Tier adcTier;
+    @Min(value = 0, message = "LP는 0 이상으로 입력하세요.") @Max(value = MAX_LP, message = "LP는 3000 이하로 입력하세요.")
+    private Integer adcLp;
     @NotNull(message = "서폿 티어를 선택하세요.")
     private Tier supportTier;
+    @Min(value = 0, message = "LP는 0 이상으로 입력하세요.") @Max(value = MAX_LP, message = "LP는 3000 이하로 입력하세요.")
+    private Integer supportLp;
 
-    /** 라인별 티어에는 언랭을 고를 수 없다 (화면 선택지에도 없지만, 주소를 직접 조작한 요청을 막는다) */
-    @AssertTrue(message = "라인별 티어에는 언랭을 고를 수 없어요.")
-    public boolean isLaneTiersRanked() {
-        return Stream.of(topTier, jungleTier, midTier, adcTier, supportTier)
-                .noneMatch(t -> t == Tier.UNRANKED);
-    }
-
+    /** 입력칸 값으로 LaneTiers를 만든다. 마스터 아래 티어에 적힌 LP는 버린다 */
     public LaneTiers toLaneTiers() {
-        return new LaneTiers(topTier, jungleTier, midTier, adcTier, supportTier);
+        return new LaneTiers(topTier, apexLp(topTier, topLp), jungleTier, apexLp(jungleTier, jungleLp),
+                midTier, apexLp(midTier, midLp), adcTier, apexLp(adcTier, adcLp),
+                supportTier, apexLp(supportTier, supportLp));
     }
 
-    /** 저장된 라인별 티어를 입력칸 5개에 채운다 (아직 없으면 빈칸 그대로) */
+    private static Integer apexLp(Tier tier, Integer lp) {
+        return tier != null && tier.isApex() ? lp : null;
+    }
+
+    /** 저장된 라인별 티어를 입력칸에 채운다 (아직 없으면 빈칸 그대로) */
     void fillLaneTiers(LaneTiers laneTiers) {
         if (laneTiers == null) {
             return;
         }
         topTier = laneTiers.top();
+        topLp = laneTiers.topLp();
         jungleTier = laneTiers.jungle();
+        jungleLp = laneTiers.jungleLp();
         midTier = laneTiers.mid();
+        midLp = laneTiers.midLp();
         adcTier = laneTiers.adc();
+        adcLp = laneTiers.adcLp();
         supportTier = laneTiers.support();
+        supportLp = laneTiers.supportLp();
     }
 
     public static PlayerForm from(Player player) {
@@ -68,7 +83,6 @@ public class PlayerForm {
         form.setRiotId(player.getRiotId());
         form.setMainPosition(player.getMainPosition());
         form.setSubPosition(player.getSubPosition());
-        form.setTier(player.getTier());
         form.fillLaneTiers(player.getLaneTiers());
         return form;
     }

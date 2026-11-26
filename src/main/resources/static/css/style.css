@@ -197,7 +197,7 @@ tr.row-lose td:first-child { box-shadow: inset 5px 0 0 var(--red); padding-left:
 .form { max-width: 540px; }
 .form-row { margin-bottom: 18px; }
 .form-row .title { display: block; font-family: var(--display); font-size: 14px; color: var(--accent); margin-bottom: 8px; }
-input[type=text], input[type=password], input[type=date], select {
+input[type=text], input[type=password], input[type=date], input[type=number], select {
     width: 100%; min-height: 42px; padding: 0 12px;
     border: 1px solid var(--line); border-radius: 0; background: #0f1218; color: var(--text); font: inherit;
 }
@@ -215,6 +215,8 @@ input[type=checkbox], input[type=radio] { width: 17px; height: 17px; cursor: poi
 .lane-fields .muted .btn { margin-left: 6px; vertical-align: middle; }
 .lane-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
 .lane-tiers { color: var(--muted); font-size: 13px; }
+.lane-lp { display: block; margin-top: 6px; }
+.lane-lp[hidden] { display: none; }
 /* 화면에는 안 보이지만 키보드와 화면 낭독기는 쓸 수 있게 숨긴다 */
 .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
@@ -268,7 +270,7 @@ body:has(.drag-ghost) { cursor: grabbing; user-select: none; }
 
 /* 목록 수정 표: 칸 안에 입력칸이 들어간다 */
 .edit-table td { vertical-align: top; padding: 8px 10px; }
-.edit-table input[type=text], .edit-table select { min-height: 38px; min-width: 120px; }
+.edit-table input[type=text], .edit-table input[type=number], .edit-table select { min-height: 38px; min-width: 120px; }
 .edit-table td:nth-child(2) input { min-width: 170px; }
 .edit-table .field-error { white-space: normal; max-width: 220px; }
 .edit-table tr.row-error { background: rgba(255, 51, 85, .08); }

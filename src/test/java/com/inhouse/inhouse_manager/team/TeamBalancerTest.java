@@ -260,6 +260,18 @@ class TeamBalancerTest {
     }
 
     @Test
+    void 마스터_이상은_LP에_따라_전력이_다르다() {
+        Candidate master0 = new Candidate(1L, "p1", Position.TOP, null, "-", 4, 0.5,
+                new LaneTiers(Tier.MASTER, 0, Tier.GOLD, null, Tier.GOLD, null, Tier.GOLD, null, Tier.GOLD, null));
+        Candidate master750 = new Candidate(2L, "p2", Position.TOP, null, "-", 4, 0.5,
+                new LaneTiers(Tier.MASTER, 750, Tier.GOLD, null, Tier.GOLD, null, Tier.GOLD, null, Tier.GOLD, null));
+
+        assertThat(new Assignment(master0, Position.TOP).power()).isEqualTo(8.0);
+        assertThat(new Assignment(master750, Position.TOP).power()).isEqualTo(9.5);
+        assertThat(new Assignment(master750, Position.TOP).tierLabel()).isEqualTo("마스터 750LP");
+    }
+
+    @Test
     void 라인별_티어가_있으면_주_포지션보다_잘하는_라인에_배치한다() {
         // 라인마다 그 라인만 다이아인 사람이 두 명씩. 주 포지션은 모두 미드다
         List<Candidate> candidates = new ArrayList<>();

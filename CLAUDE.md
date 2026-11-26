@@ -37,8 +37,8 @@ src/main/java/com/inhouse/inhouse_manager/
  ├─ common/
  │   └─ NotFoundException.java   @ResponseStatus(404). 없는 id 조회 시 → templates/error/404.html
  ├─ player/
- │   ├─ Player.java, Position.java, Tier.java(아이언 1 ~ 챌린저 10, 언랭 null), PlayerRepository.java
- │   ├─ LaneTiers.java           라인별 티어 5개 (@Embeddable record). Player.laneTiers, 옛 플레이어는 null
+ │   ├─ Player.java, Position.java, Tier.java(아이언 1 ~ 챌린저 10, 마스터 이상 LP 점수), PlayerRepository.java
+ │   ├─ LaneTiers.java           라인별 티어 5개 + LP (@Embeddable record). Player.laneTiers, 옛 플레이어는 null
  │   ├─ PlayerService.java       등록/수정/삭제/조회. 삭제: 기록 없으면 DB 삭제, 있으면 소프트 삭제(deletedAt)
  │   ├─ PlayerController.java    /players, /players/new, /players/edit(목록 수정), /players/{id}, /players/{id}/edit, /players/{id}/delete
  │   ├─ PlayerForm.java          등록·수정 폼 + 검증
@@ -58,7 +58,7 @@ src/main/java/com/inhouse/inhouse_manager/
  │   └─ StatsService.java        참가 기록으로 매번 계산 (저장 안 함)
  └─ team/
      ├─ TeamBalancer.java        126가지 분할 × 120가지 포지션 배치 완전 탐색 (순수 자바). 불균형 = 전력 차이 + 0.5 × 티어 분포 차이. 주 포지션이 아니면 전력 감점(부 -1, 그 외 -2)
-     ├─ TeamService.java         id 10개 → 후보 만들기(언랭/미입력 티어는 참가자 평균) → TeamBalancer
+     ├─ TeamService.java         id 10개 → 후보 만들기(라인별 티어 없으면 참가자 주 라인 티어 평균) → TeamBalancer
      └─ TeamController.java      /teams, /teams/result (GET, shuffle=seed면 5개 라인 각각 교체 여부를 랜덤으로, 1~4쌍 교체)
 src/main/resources/templates/
  ├─ fragments/layout.html, error.html, error/404.html, login.html, admin-trash.html
@@ -112,6 +112,7 @@ src/test/java/com/inhouse/inhouse_manager/
 > - 2026-11-26: 사용자 요청("라인이 겹쳐서 부포나 아예 다른 포지션으로 가는 상황도 계산")으로 포지션 감점을 넣었다. 맡은 포지션이 부 포지션이면 전력 -1, 그 외 -2 (`Assignment.power()`). 팀 전력과 전력 차이에 반영되어, 라인이 겹치는 사람들이 두 팀에 고르게 나뉜다. 결과 화면 팀 머리에 "(라인 감점 -n)" 표시. 부포로 가는 경우, 둘 다 아닌 경우, 부포인 사람을 먼저 보내는 경우 테스트 추가. "한 팀만 부포(-1)"와 "두 팀 다 다른 라인(-2 대 -2)" 중에서는 두 팀 감점이 같은 쪽을 고르는 지금 방식을 사용자가 유지하기로 했다(테스트로 고정). 테스트 53개.
 > - 2026-11-26: 사용자 요청("라인마다 본인이 생각하는 티어를 입력해서 하자")으로 라인별 티어를 추가했다. 사용자 선택: 5칸 모두 필수, 솔랭 티어·주/부 포지션은 유지. `LaneTiers`(@Embeddable record, 컬럼 top_tier ~ support_tier)를 `Player.laneTiers`에 넣고, 팀 나누기는 맡은 라인의 티어로 계산(감점 없음). 라인별 티어가 없는 옛 플레이어는 솔랭 티어 + 포지션 감점. 균형이 비슷한 조합끼리는 두 팀 전력 합이 큰 쪽을 먼저 고르게 바꿨다("35 대 35"와 "25 대 25"를 같게 보던 문제). 등록 폼에 "솔랭 티어로 빈칸 채우기" 버튼. 테스트 59개. (목록에 "라인 티어 미입력"으로 표시, 목록 수정에서 한 번에 입력 가능)
 > - 2026-11-26: 사용자 요청으로 실제 DB(8081)의 플레이어 10명(`#RAND`, id 12~21, 이때 남아 있던 전부)에게 라인별 티어를 임의로 채웠다. 규칙: 주 포지션 = 솔랭 티어, 부 포지션 = 한 단계 아래, 나머지 = 1~3단계 아래 무작위(최저 아이언). 8081의 목록 수정 화면으로 저장했다.
+> - 2026-11-26: 사용자 요청("솔랭 티어 말고 라인 티어로, 마스터·그마·챌은 점수를 적을 수 있게")으로 솔랭 티어 입력·표시를 없애고(`Player.tier` 필드 삭제, DB `tier` 컬럼은 남아 있지만 안 씀, `Tier.UNRANKED` 삭제), 마스터 이상 라인에 LP 칸(선택, 0~3000)을 추가했다. 점수 = 8 + LP/500 (비우면 8/9/10). 목록·카드·휴지통의 티어 배지는 "주 라인 티어"(주 포지션의 라인 티어). 라인별 티어가 없는 옛 플레이어는 참가자 주 라인 티어 평균 + 포지션 감점. 실제 DB 복사본으로 서버를 띄워 기존 데이터가 그대로 읽히는 것을 확인했다. 테스트 67개.
 > **현재 위치 (2026-11-25 세션 종료):** 오늘 작업은 모두 커밋하고 GitHub(`main`)에 푸시했다. 테스트 47개 통과.
 > - 마지막 기능(관리자 로그인과 휴지통)은 시험 서버(8082)에서만 확인했다. 사용자가 IntelliJ에서 **Gradle 새로고침(시큐리티 의존성 추가) 후 8081 재시작**을 아직 하지 않았을 수 있으니, 다음 세션 시작 때 먼저 확인할 것.
 > - 사용자 DB(8081) 상태 (2026-11-26): 목록에 남은 플레이어는 `#RAND` 10명(id 12~21)뿐이고, 모두 솔랭 티어와 라인별 티어가 있다. 나머지는 삭제(휴지통). 경기 기록 있음.

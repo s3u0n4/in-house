@@ -117,7 +117,6 @@ public class PlayerController {
                     playerForm.getRiotId(),
                     playerForm.getMainPosition(),
                     playerForm.getSubPosition(),
-                    playerForm.getTier(),
                     playerForm.toLaneTiers()
             );
         } catch (IllegalArgumentException e) {
@@ -157,7 +156,6 @@ public class PlayerController {
                     playerForm.getRiotId(),
                     playerForm.getMainPosition(),
                     playerForm.getSubPosition(),
-                    playerForm.getTier(),
                     playerForm.toLaneTiers()
             );
         } catch (IllegalArgumentException e) {
@@ -179,8 +177,7 @@ public class PlayerController {
     /** 등록과 수정이 같은 폼 화면을 쓴다. playerId가 null이면 등록, 있으면 수정 */
     private void addFormOptions(Model model, Long playerId) {
         model.addAttribute("positions", Position.values());
-        model.addAttribute("tiers", Tier.values());
-        model.addAttribute("laneTierOptions", Tier.ranked());
+        model.addAttribute("laneTierOptions", Tier.values());
         model.addAttribute("playerId", playerId);
     }
 }

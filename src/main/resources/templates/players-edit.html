@@ -14,7 +14,7 @@
             <div>
                 <h1>플레이어 목록 수정</h1>
                 <p class="sub">칸을 고친 뒤 저장을 누르면 한 번에 반영됩니다. 하나라도 잘못되면 아무것도 저장되지 않아요.<br>
-                    탑 ~ 서폿은 라인별 티어(본인이 생각하는 그 라인 실력)로, 다섯 칸 모두 골라야 저장됩니다.<br>
+                    탑 ~ 서폿은 라인별 티어(본인이 생각하는 그 라인 실력)로, 다섯 칸 모두 골라야 저장됩니다. 마스터 이상은 LP를 적을 수 있어요(선택).<br>
                     지울 플레이어는 맨 오른쪽 <strong>삭제</strong>를 체크하세요. 지난 경기 기록에는 "(삭제됨)"으로 남고, 관리자가 휴지통에서 되돌릴 수 있어요.</p>
             </div>
             <div class="actions">
@@ -31,7 +31,7 @@
         <div class="table-wrap">
             <table class="edit-table">
                 <thead>
-                <tr><th>이름</th><th>라이엇 ID</th><th>솔랭 티어</th><th>주 포지션</th><th>부 포지션</th>
+                <tr><th>이름</th><th>라이엇 ID</th><th>주 포지션</th><th>부 포지션</th>
                     <th>탑</th><th>정글</th><th>미드</th><th>원딜</th><th>서폿</th><th>삭제</th></tr>
                 </thead>
                 <tbody>
@@ -51,14 +51,6 @@
                            th:errors="*{rows[__${stat.index}__].riotId}">라이엇 ID 오류</p>
                     </td>
                     <td>
-                        <select th:field="*{rows[__${stat.index}__].tier}" th:attr="aria-label=|${stat.count}번째 티어|">
-                            <option value="">선택하세요</option>
-                            <option th:each="t : ${tiers}" th:value="${t}" th:text="${t.label}">골드</option>
-                        </select>
-                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].tier')}"
-                           th:errors="*{rows[__${stat.index}__].tier}">티어 오류</p>
-                    </td>
-                    <td>
                         <select th:field="*{rows[__${stat.index}__].mainPosition}" th:attr="aria-label=|${stat.count}번째 주 포지션|">
                             <option value="">선택하세요</option>
                             <option th:each="pos : ${positions}" th:value="${pos}" th:text="${pos}">MID</option>
@@ -73,42 +65,62 @@
                         </select>
                     </td>
                     <td>
-                        <select th:field="*{rows[__${stat.index}__].topTier}" th:attr="aria-label=|${stat.count}번째 탑 티어|">
+                        <select class="lane-tier" th:field="*{rows[__${stat.index}__].topTier}" th:attr="aria-label=|${stat.count}번째 탑 티어|">
                             <option value="">선택</option>
                             <option th:each="t : ${laneTierOptions}" th:value="${t}" th:text="${t.label}">골드</option>
                         </select>
+                        <input type="number" class="lane-lp" th:field="*{rows[__${stat.index}__].topLp}" min="0" max="3000"
+                               placeholder="LP" th:attr="aria-label=|${stat.count}번째 탑 LP|">
+                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].topLp')}"
+                           th:errors="*{rows[__${stat.index}__].topLp}">탑 LP 오류</p>
                         <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].topTier')}"
                            th:errors="*{rows[__${stat.index}__].topTier}">탑 티어 오류</p>
                     </td>
                     <td>
-                        <select th:field="*{rows[__${stat.index}__].jungleTier}" th:attr="aria-label=|${stat.count}번째 정글 티어|">
+                        <select class="lane-tier" th:field="*{rows[__${stat.index}__].jungleTier}" th:attr="aria-label=|${stat.count}번째 정글 티어|">
                             <option value="">선택</option>
                             <option th:each="t : ${laneTierOptions}" th:value="${t}" th:text="${t.label}">골드</option>
                         </select>
+                        <input type="number" class="lane-lp" th:field="*{rows[__${stat.index}__].jungleLp}" min="0" max="3000"
+                               placeholder="LP" th:attr="aria-label=|${stat.count}번째 정글 LP|">
+                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].jungleLp')}"
+                           th:errors="*{rows[__${stat.index}__].jungleLp}">정글 LP 오류</p>
                         <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].jungleTier')}"
                            th:errors="*{rows[__${stat.index}__].jungleTier}">정글 티어 오류</p>
                     </td>
                     <td>
-                        <select th:field="*{rows[__${stat.index}__].midTier}" th:attr="aria-label=|${stat.count}번째 미드 티어|">
+                        <select class="lane-tier" th:field="*{rows[__${stat.index}__].midTier}" th:attr="aria-label=|${stat.count}번째 미드 티어|">
                             <option value="">선택</option>
                             <option th:each="t : ${laneTierOptions}" th:value="${t}" th:text="${t.label}">골드</option>
                         </select>
+                        <input type="number" class="lane-lp" th:field="*{rows[__${stat.index}__].midLp}" min="0" max="3000"
+                               placeholder="LP" th:attr="aria-label=|${stat.count}번째 미드 LP|">
+                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].midLp')}"
+                           th:errors="*{rows[__${stat.index}__].midLp}">미드 LP 오류</p>
                         <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].midTier')}"
                            th:errors="*{rows[__${stat.index}__].midTier}">미드 티어 오류</p>
                     </td>
                     <td>
-                        <select th:field="*{rows[__${stat.index}__].adcTier}" th:attr="aria-label=|${stat.count}번째 원딜 티어|">
+                        <select class="lane-tier" th:field="*{rows[__${stat.index}__].adcTier}" th:attr="aria-label=|${stat.count}번째 원딜 티어|">
                             <option value="">선택</option>
                             <option th:each="t : ${laneTierOptions}" th:value="${t}" th:text="${t.label}">골드</option>
                         </select>
+                        <input type="number" class="lane-lp" th:field="*{rows[__${stat.index}__].adcLp}" min="0" max="3000"
+                               placeholder="LP" th:attr="aria-label=|${stat.count}번째 원딜 LP|">
+                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].adcLp')}"
+                           th:errors="*{rows[__${stat.index}__].adcLp}">원딜 LP 오류</p>
                         <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].adcTier')}"
                            th:errors="*{rows[__${stat.index}__].adcTier}">원딜 티어 오류</p>
                     </td>
                     <td>
-                        <select th:field="*{rows[__${stat.index}__].supportTier}" th:attr="aria-label=|${stat.count}번째 서폿 티어|">
+                        <select class="lane-tier" th:field="*{rows[__${stat.index}__].supportTier}" th:attr="aria-label=|${stat.count}번째 서폿 티어|">
                             <option value="">선택</option>
                             <option th:each="t : ${laneTierOptions}" th:value="${t}" th:text="${t.label}">골드</option>
                         </select>
+                        <input type="number" class="lane-lp" th:field="*{rows[__${stat.index}__].supportLp}" min="0" max="3000"
+                               placeholder="LP" th:attr="aria-label=|${stat.count}번째 서폿 LP|">
+                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].supportLp')}"
+                           th:errors="*{rows[__${stat.index}__].supportLp}">서폿 LP 오류</p>
                         <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].supportTier')}"
                            th:errors="*{rows[__${stat.index}__].supportTier}">서폿 티어 오류</p>
                     </td>
@@ -121,12 +133,10 @@
                         </label>
                         <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].delete')}"
                            th:errors="*{rows[__${stat.index}__].delete}">삭제 오류</p>
-                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].laneTiersRanked')}"
-                           th:errors="*{rows[__${stat.index}__].laneTiersRanked}">언랭 오류</p>
                     </td>
                 </tr>
                 <tr th:if="*{#lists.isEmpty(rows)}">
-                    <td class="empty" colspan="11">등록된 플레이어가 없습니다.</td>
+                    <td class="empty" colspan="10">등록된 플레이어가 없습니다.</td>
                 </tr>
                 </tbody>
             </table>
@@ -147,6 +157,22 @@
             event.preventDefault();
         }
     });
+</script>
+<script>
+    // 마스터 이상을 고른 라인만 LP 칸을 보여준다. 자바스크립트가 꺼져 있으면 LP 칸이 항상 보인다 (마스터 아래면 서버가 LP를 버린다)
+    (function () {
+        var APEX = ['MASTER', 'GRANDMASTER', 'CHALLENGER'];
+        document.querySelectorAll('.lane-tier').forEach(function (select) {
+            var lp = select.parentElement.querySelector('.lane-lp');
+            function sync() {
+                var apex = APEX.indexOf(select.value) >= 0;
+                lp.hidden = !apex;
+                if (!apex) lp.value = '';
+            }
+            select.addEventListener('change', sync);
+            sync();
+        });
+    })();
 </script>
 </body>
 </html>

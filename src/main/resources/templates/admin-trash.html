@@ -20,13 +20,13 @@
     <div class="table-wrap">
         <table>
             <thead>
-            <tr><th>이름</th><th>라이엇 ID</th><th>티어</th><th>주 포지션</th><th>삭제한 시각</th><th></th></tr>
+            <tr><th>이름</th><th>라이엇 ID</th><th>주 라인 티어</th><th>주 포지션</th><th>삭제한 시각</th><th></th></tr>
             </thead>
             <tbody>
             <tr th:each="player : ${deletedPlayers}">
                 <td><a th:href="@{/players/{id}(id=${player.id})}" th:text="${player.name}">철수</a></td>
                 <td th:text="${player.originalRiotId}">철수#KR1</td>
-                <td><span class="tier" th:classappend="|tier-${player.tier}|" th:text="${player.tier?.label} ?: '-'">골드</span></td>
+                <td><span class="tier" th:classappend="|tier-${player.mainLaneTier}|" th:text="${player.mainLaneLabel}">골드</span></td>
                 <td th:text="${player.mainPosition}">MID</td>
                 <td th:text="${#temporals.format(player.deletedAt, 'yyyy-MM-dd HH:mm')}">2026-11-25 20:00</td>
                 <td>

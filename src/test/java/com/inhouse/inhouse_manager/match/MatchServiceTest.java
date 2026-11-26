@@ -39,7 +39,7 @@ class MatchServiceTest {
     void setUp() {
         List<Long> ids = new ArrayList<>();
         for (int i = 1; i <= 10; i++) {
-            ids.add(playerRepository.save(new Player("플레이어" + i, "player#" + i, Position.MID, null, Tier.GOLD, null)).getId());
+            ids.add(playerRepository.save(new Player("플레이어" + i, "player#" + i, Position.MID, null, null)).getId());
         }
         blueIds = ids.subList(0, 5);
         redIds = ids.subList(5, 10);

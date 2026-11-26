@@ -34,9 +34,10 @@ public class TeamBalancer {
     private static final List<int[]> POSITION_ORDERS = permutations(TEAM_SIZE);
 
     /**
-     * tierScore: 솔랭 티어 점수 (언랭이나 미입력은 TeamService가 참가자 평균으로 채워서 넘긴다)
+     * laneTiers: 라인별 티어. 다 넣은 사람만 있고, 아니면 null
+     * tierScore, tierLabel: 라인별 티어가 없을 때 쓰는 티어 점수와 이름 (TeamService가 참가자 평균으로 채워서 넘긴다).
+     *   이때는 주/부 포지션으로 감점한다
      * rating: 내전 보정 승률 (승+1)/(경기+2)
-     * laneTiers: 라인별 티어. 다 넣은 사람만 있고, 아니면 null (그때는 솔랭 티어와 주/부 포지션으로 계산)
      */
     public record Candidate(Long playerId, String name, Position mainPosition, Position subPosition,
                             String tierLabel, double tierScore, double rating, LaneTiers laneTiers) {
@@ -59,14 +60,14 @@ public class TeamBalancer {
             return 0;
         }
 
-        /** 이 포지션에서의 티어 점수. 라인별 티어가 있으면 그 라인의 티어, 없으면 솔랭 티어 */
+        /** 이 포지션에서의 티어 점수. 라인별 티어가 있으면 그 라인의 티어(마스터 이상은 LP 반영), 없으면 tierScore */
         public double tierScore() {
-            return player.laneTiers() != null ? player.laneTiers().of(position).getScore() : player.tierScore();
+            return player.laneTiers() != null ? player.laneTiers().scoreOf(position) : player.tierScore();
         }
 
-        /** 화면에 보여줄 티어 이름 (라인별 티어가 있으면 그 라인의 티어) */
+        /** 화면에 보여줄 티어 이름. 예: "다이아몬드", "마스터 350LP" */
         public String tierLabel() {
-            return player.laneTiers() != null ? player.laneTiers().of(position).getLabel() : player.tierLabel();
+            return player.laneTiers() != null ? player.laneTiers().labelOf(position) : player.tierLabel();
         }
 
         /** 포지션 감점. 라인별 티어가 없는 사람만: 주 포지션 0, 부 포지션 -1, 그 외 -2 */

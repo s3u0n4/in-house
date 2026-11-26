@@ -35,7 +35,7 @@
                                th:checked="${#lists.contains(selectedIds, player.id)}">
                         <span class="card-top">
                             <span class="card-name" th:text="${player.name}">홍길동</span>
-                            <span class="tier" th:classappend="|tier-${player.tier}|" th:text="${player.tier?.label} ?: '-'">골드</span>
+                            <span class="tier" th:classappend="|tier-${player.mainLaneTier}|" th:text="${player.mainLaneLabel}">골드</span>
                         </span>
                         <span class="card-meta">
                             <span th:text="${player.mainPosition}">MID</span>

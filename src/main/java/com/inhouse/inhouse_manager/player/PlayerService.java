@@ -16,18 +16,18 @@ public class PlayerService {
     private final PlayerRepository playerRepository;
 
     @Transactional
-    public Long register(String name, String riotId, Position mainPosition, Position subPosition, Tier tier,
+    public Long register(String name, String riotId, Position mainPosition, Position subPosition,
                          LaneTiers laneTiers) {
         String trimmedRiotId = riotId.strip();
         if (playerRepository.existsByRiotId(trimmedRiotId)){
             throw new IllegalArgumentException("이미 등록된 라이엇 ID입니다: " + trimmedRiotId);
         }
-        Player player = new Player(name.strip(), trimmedRiotId, mainPosition, subPosition, tier, laneTiers);
+        Player player = new Player(name.strip(), trimmedRiotId, mainPosition, subPosition, laneTiers);
         return playerRepository.save(player).getId();
     }
 
     @Transactional
-    public void update(Long id, String name, String riotId, Position mainPosition, Position subPosition, Tier tier,
+    public void update(Long id, String name, String riotId, Position mainPosition, Position subPosition,
                        LaneTiers laneTiers) {
         Player player = findActiveById(id);
         String trimmedRiotId = riotId.strip();
@@ -35,7 +35,7 @@ public class PlayerService {
             throw new IllegalArgumentException("이미 등록된 라이엇 ID입니다: " + trimmedRiotId);
         }
         // 트랜잭션이 끝날 때 JPA가 바뀐 필드를 찾아 UPDATE 한다 (변경 감지). save()를 다시 부를 필요가 없다.
-        player.update(name.strip(), trimmedRiotId, mainPosition, subPosition, tier, laneTiers);
+        player.update(name.strip(), trimmedRiotId, mainPosition, subPosition, laneTiers);
     }
 
     /**
@@ -64,7 +64,7 @@ public class PlayerService {
         // 삭제를 먼저 DB에 반영해 둔다. 그래야 지운 사람의 라이엇 ID를 다른 줄이 바로 쓸 수 있다
         playerRepository.flush();
         for (PlayerUpdate update : updates) {
-            update(update.id(), update.name(), update.riotId(), update.mainPosition(), update.subPosition(), update.tier(),
+            update(update.id(), update.name(), update.riotId(), update.mainPosition(), update.subPosition(),
                     update.laneTiers());
         }
     }
