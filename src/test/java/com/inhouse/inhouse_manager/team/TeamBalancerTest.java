@@ -24,6 +24,10 @@ class TeamBalancerTest {
         return new Candidate(id, "p" + id, main, null, "티어", tierScore, 0.5);
     }
 
+    private static Assignment assignmentAt(TeamBalancer.Lineup lineup, Position position) {
+        return lineup.assignments().stream().filter(a -> a.position() == position).findFirst().orElseThrow();
+    }
+
     private static List<Candidate> sameCandidates() {
         List<Candidate> candidates = new ArrayList<>();
         for (long i = 1; i <= 10; i++) {
@@ -125,6 +129,87 @@ class TeamBalancerTest {
 
         assertThat(split.blue().positionPenalty()).isEqualTo(split.red().positionPenalty());
         assertThat(split.powerDiff()).isLessThan(1e-9);
+    }
+
+    @Test
+    void 라인이_겹치면_부_포지션이_되는_사람을_보낸다() {
+        // 탑·정글·원딜 주포 2명씩 + 미드 주포 4명, 서폿 주포는 없다
+        // 미드 주포 중 2명(7, 8번)만 부 포지션이 서폿이다
+        List<Candidate> candidates = new ArrayList<>();
+        long id = 1;
+        for (Position position : List.of(Position.TOP, Position.JUNGLE, Position.ADC)) {
+            candidates.add(candidate(id++, position, 4));
+            candidates.add(candidate(id++, position, 4));
+        }
+        candidates.add(new Candidate(id++, "p7", Position.MID, Position.SUPPORT, "골드", 4, 0.5));
+        candidates.add(new Candidate(id++, "p8", Position.MID, Position.SUPPORT, "골드", 4, 0.5));
+        candidates.add(candidate(id++, Position.MID, 4));
+        candidates.add(candidate(id, Position.MID, 4));
+
+        TeamSplit split = teamBalancer.split(candidates);
+
+        // 팀마다 서폿 부포인 사람이 서폿을 가고, 나머지는 모두 주 포지션
+        for (var lineup : List.of(split.blue(), split.red())) {
+            Assignment support = assignmentAt(lineup, Position.SUPPORT);
+            assertThat(support.player().playerId()).isIn(7L, 8L);
+            assertThat(support.fit()).isEqualTo(1);
+            assertThat(support.fitLabel()).isEqualTo("부");
+            assertThat(lineup.assignments()).filteredOn(a -> a.position() != Position.SUPPORT)
+                    .allMatch(a -> a.fit() == 2);
+            assertThat(lineup.positionPenalty()).isEqualTo(1.0);
+            assertThat(lineup.power()).isEqualTo(5 * 4 - 1.0);
+        }
+        assertThat(split.powerDiff()).isLessThan(1e-9);
+    }
+
+    @Test
+    void 주_포지션도_부_포지션도_아닌_라인에_가면_2점을_깎는다() {
+        // 탑·정글·원딜 주포 2명씩 + 미드 주포 4명(부 포지션 없음), 서폿을 할 수 있는 사람이 없다
+        List<Candidate> candidates = new ArrayList<>();
+        long id = 1;
+        for (Position position : List.of(Position.TOP, Position.JUNGLE, Position.ADC)) {
+            candidates.add(candidate(id++, position, 4));
+            candidates.add(candidate(id++, position, 4));
+        }
+        for (int i = 0; i < 4; i++) {
+            candidates.add(candidate(id++, Position.MID, 4));
+        }
+
+        TeamSplit split = teamBalancer.split(candidates);
+
+        // 미드 주포가 팀마다 2명씩 가고, 그중 1명이 서폿을 맡는다
+        for (var lineup : List.of(split.blue(), split.red())) {
+            Assignment support = assignmentAt(lineup, Position.SUPPORT);
+            assertThat(support.player().mainPosition()).isEqualTo(Position.MID);
+            assertThat(support.fit()).isEqualTo(0);
+            assertThat(support.fitLabel()).isEqualTo("-");
+            assertThat(lineup.positionPenalty()).isEqualTo(2.0);
+            assertThat(lineup.power()).isEqualTo(5 * 4 - 2.0);
+        }
+        assertThat(split.powerDiff()).isLessThan(1e-9);
+    }
+
+    @Test
+    void 다른_라인을_가야_하면_부_포지션인_사람을_먼저_보낸다() {
+        // 서폿 주포가 없고 미드 주포가 4명. 미드 주포 중 1명(7번)만 부 포지션이 서폿이다
+        // 7번이 있는 팀은 7번이 서폿(부, -1)을 가야 하고, 다른 미드 주포를 보내면(-2) 안 된다
+        List<Candidate> candidates = new ArrayList<>();
+        long id = 1;
+        for (Position position : List.of(Position.TOP, Position.JUNGLE, Position.ADC)) {
+            candidates.add(candidate(id++, position, 4));
+            candidates.add(candidate(id++, position, 4));
+        }
+        candidates.add(new Candidate(id++, "p7", Position.MID, Position.SUPPORT, "골드", 4, 0.5));
+        for (int i = 0; i < 3; i++) {
+            candidates.add(candidate(id++, Position.MID, 4));
+        }
+
+        TeamSplit split = teamBalancer.split(candidates);
+
+        var teamWithSeven = split.blue().playerIds().contains(7L) ? split.blue() : split.red();
+        Assignment support = assignmentAt(teamWithSeven, Position.SUPPORT);
+        assertThat(support.player().playerId()).isEqualTo(7L);
+        assertThat(support.fit()).isEqualTo(1);
     }
 
     @Test
