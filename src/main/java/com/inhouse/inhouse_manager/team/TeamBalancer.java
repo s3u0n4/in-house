@@ -33,6 +33,11 @@ public class TeamBalancer {
 
     private static final List<int[]> POSITION_ORDERS = permutations(TEAM_SIZE);
 
+    /** 보정 승률(0~1)을 전력 점수 보정값(-2 ~ +2)으로 바꾼다. 랭킹 화면의 전력도 이 값을 쓴다 */
+    public static double ratingBonus(double rating) {
+        return (rating - 0.5) * WIN_RATE_WEIGHT;
+    }
+
     /**
      * laneTiers: 라인별 티어. 다 넣은 사람만 있고, 아니면 null
      * tierScore, tierLabel: 라인별 티어가 없을 때 쓰는 티어 점수와 이름 (TeamService가 참가자 평균으로 채워서 넘긴다).
@@ -49,7 +54,7 @@ public class TeamBalancer {
 
         /** 내전 승률 보정. 보정 승률이 0.5에서 멀어질수록 최대 ±2 */
         public double ratingBonus() {
-            return (rating - 0.5) * WIN_RATE_WEIGHT;
+            return TeamBalancer.ratingBonus(rating);
         }
     }
 

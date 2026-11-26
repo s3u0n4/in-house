@@ -56,6 +56,11 @@ src/main/java/com/inhouse/inhouse_manager/
  │   ├─ PlayerStats.java         record(games, wins): losses, winRateText, rating=(승+1)/(경기+2)
  │   ├─ PlayerRecord.java        상세 화면용 (전체, 포지션별, 최근 10경기)
  │   └─ StatsService.java        참가 기록으로 매번 계산 (저장 안 함)
+ ├─ ranking/                    (2026-11-26 추가)
+ │   ├─ RankingSort.java         enum RATE(보정 승률)/WINS(다승)/POWER(전력) + 화면 설명
+ │   ├─ RankingRow.java          record(rank, player, stats, power). rank null = 순위 밖
+ │   ├─ RankingService.java      삭제 안 된 플레이어 정렬 + 공동 순위(1,1,3). 화면 자릿수로 반올림해 비교
+ │   └─ RankingController.java   GET /ranking?sort=
  └─ team/
      ├─ TeamBalancer.java        126가지 분할 × 120가지 포지션 배치 완전 탐색 (순수 자바). 불균형 = 전력 차이 + 0.5 × 티어 분포 차이. 주 포지션이 아니면 전력 감점(부 -1, 그 외 -2)
      ├─ TeamService.java         id 10개 → 후보 만들기(라인별 티어 없으면 참가자 주 라인 티어 평균) → TeamBalancer
@@ -64,12 +69,14 @@ src/main/resources/templates/
  ├─ fragments/layout.html, error.html, error/404.html, login.html, admin-trash.html
  ├─ players.html, players-edit.html(목록 수정), player-form.html(등록·수정 같이 씀), player-detail.html
  ├─ matches.html, match-form.html, match-detail.html
- └─ team-select.html, team-result.html
+ ├─ team-select.html, team-result.html
+ └─ ranking.html
 src/test/java/com/inhouse/inhouse_manager/
  ├─ InhouseManagerApplicationTests.java  (메모리 DB로 컨텍스트 로드)
  ├─ player/PlayerRepositoryTest, PlayerServiceTest
  ├─ match/MatchServiceTest
  ├─ stats/StatsServiceTest
+ ├─ ranking/RankingServiceTest
  └─ team/TeamBalancerTest, TeamServiceTest
 ```
 
@@ -114,6 +121,7 @@ src/test/java/com/inhouse/inhouse_manager/
 > - 2026-11-26: 사용자 요청으로 실제 DB(8081)의 플레이어 10명(`#RAND`, id 12~21, 이때 남아 있던 전부)에게 라인별 티어를 임의로 채웠다. 규칙: 주 포지션 = 솔랭 티어, 부 포지션 = 한 단계 아래, 나머지 = 1~3단계 아래 무작위(최저 아이언). 8081의 목록 수정 화면으로 저장했다.
 > - 2026-11-26: 사용자 요청("솔랭 티어 말고 라인 티어로, 마스터·그마·챌은 점수를 적을 수 있게")으로 솔랭 티어 입력·표시를 없애고(`Player.tier` 필드 삭제, DB `tier` 컬럼은 남아 있지만 안 씀, `Tier.UNRANKED` 삭제), 마스터 이상 라인에 LP 칸(선택, 0~3000)을 추가했다. 점수 = 8 + LP/500 (비우면 8/9/10). 목록·카드·휴지통의 티어 배지는 "주 라인 티어"(주 포지션의 라인 티어). 라인별 티어가 없는 옛 플레이어는 참가자 주 라인 티어 평균 + 포지션 감점. 실제 DB 복사본으로 서버를 띄워 기존 데이터가 그대로 읽히는 것을 확인했다. 테스트 67개.
 > - 2026-11-26: 사용자 요청("입력값을 바꿔서 직접 테스트")으로 메모리 DB 서버에서 31가지 입력을 시험했다(등록·수정·목록 수정·팀 나누기·랜덤 교체·브라우저 LP 칸·휴대폰 폭). 찾은 문제 2개를 고쳤다: (1) LP에 abc/1.5, 조작된 티어·포지션 값을 보내면 "Failed to convert property value..." 영어 오류가 그대로 보임 → `messages.properties`에 typeMismatch 한국어 문구 추가 (2) 부 포지션을 주 포지션과 같게 저장할 수 있었음 → `PlayerForm.isSubPositionDifferent` (@AssertTrue). `PlayerFormTest` 추가, 테스트 70개.
+> - 2026-11-26: 랭킹 화면 추가 (`/ranking`, 헤더 메뉴 "랭킹"). 탭 3개: 승률(보정 승률, 기본)·다승·전력(주 라인 티어 + 내전 보정, `TeamBalancer.ratingBonus`를 같이 씀). 같은 기록은 같은 순위, 경기 없는 사람(전력은 라인 티어 없는 사람)은 순위 "-"로 맨 뒤. 1~3위 강조, 휴대폰에서는 열 3개 숨김. 실제 DB 복사본으로 화면 확인. 테스트 76개.
 > **현재 위치 (2026-11-25 세션 종료):** 오늘 작업은 모두 커밋하고 GitHub(`main`)에 푸시했다. 테스트 47개 통과.
 > - 마지막 기능(관리자 로그인과 휴지통)은 시험 서버(8082)에서만 확인했다. 사용자가 IntelliJ에서 **Gradle 새로고침(시큐리티 의존성 추가) 후 8081 재시작**을 아직 하지 않았을 수 있으니, 다음 세션 시작 때 먼저 확인할 것.
 > - 사용자 DB(8081) 상태 (2026-11-26): 플레이어 20명 = `#RAND` 10명(id 12~21) + 사용자 요청으로 추가한 `#NEW` 10명(id 22~31, 라인별 티어 무작위). 모두 라인별 티어가 있고, 마스터 이상 라인은 LP도 채웠다. 나머지는 삭제(휴지통). 사용자 요청으로 이 20명 중 무작위 10명씩 팀 나누기 결과(일부는 랜덤 교체)로 경기 8개를 넣었다(2026-11-13 ~ 11-25, 승패는 전력 차이를 약하게 반영한 무작위). 그 전의 경기 기록은 삭제된 테스트 플레이어들 것. 테스트 플레이어는 사용자가 원하면 목록 수정에서 삭제.
@@ -121,8 +129,7 @@ src/test/java/com/inhouse/inhouse_manager/
 
 후보 (사용자와 정할 것):
 1. 경기 결과 수정 (지금은 삭제 후 다시 기록)
-2. 랭킹 화면 (승률, 전력 순)
-3. 챔피언, KDA 기록
-4. 컨트롤러 테스트 (`@WebMvcTest`, 시큐리티와 CSRF 포함)
-5. 휴지통에서 영구 삭제
-6. 배포 (친구들이 링크로 보게) + Riot API 연동
+2. 챔피언, KDA 기록
+3. 컨트롤러 테스트 (`@WebMvcTest`, 시큐리티와 CSRF 포함)
+4. 휴지통에서 영구 삭제
+5. 배포 (친구들이 링크로 보게) + Riot API 연동

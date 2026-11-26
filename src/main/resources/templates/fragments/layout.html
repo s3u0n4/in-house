@@ -15,7 +15,7 @@
 
 <body>
 
-<!-- menu: 현재 메뉴 이름 (players, matches, teams). 해당 메뉴를 강조한다 -->
+<!-- menu: 현재 메뉴 이름 (players, matches, ranking, teams). 해당 메뉴를 강조한다 -->
 <th:block th:fragment="header(menu)">
     <header class="site-header">
         <div class="container header-inner">
@@ -26,6 +26,7 @@
             <nav class="nav">
                 <a th:href="@{/players}" th:classappend="${menu == 'players'} ? 'active'">플레이어</a>
                 <a th:href="@{/matches}" th:classappend="${menu == 'matches'} ? 'active'">경기 기록</a>
+                <a th:href="@{/ranking}" th:classappend="${menu == 'ranking'} ? 'active'">랭킹</a>
                 <a th:href="@{/teams}" th:classappend="${menu == 'teams'} ? 'active'">팀 나누기</a>
                 <!-- isAdmin: AdminAdvice가 넘겨준다 (관리자로 로그인했으면 true) -->
                 <a th:if="${isAdmin}" th:href="@{/admin/trash}" th:classappend="${menu == 'trash'} ? 'active'">휴지통</a>

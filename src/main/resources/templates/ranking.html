@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('랭킹')}">
+    <meta charset="UTF-8">
+    <title>랭킹</title>
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: header('ranking')}"></th:block>
+
+<main class="container">
+    <div class="page-head">
+        <div>
+            <h1>랭킹</h1>
+            <p class="sub" th:text="${sort.description}">보정 승률 순</p>
+        </div>
+    </div>
+
+    <!-- 정렬 탭: 누르면 ?sort=WINS 처럼 주소가 바뀐다 -->
+    <nav class="tabs" aria-label="정렬 기준">
+        <a th:each="s : ${sorts}" th:href="@{/ranking(sort=${s})}" th:text="${s.label}"
+           th:classappend="${s == sort} ? 'active'" th:attr="aria-current=${s == sort} ? 'page'">승률</a>
+    </nav>
+
+    <div class="table-wrap">
+        <table class="ranking-table">
+            <thead>
+            <tr>
+                <th class="num">순위</th>
+                <th>이름</th>
+                <th class="hide-sm">주 라인 티어</th>
+                <th class="num">경기</th>
+                <th class="num" th:classappend="${sort.name() == 'WINS'} ? 'sorted'">승</th>
+                <th class="num hide-sm">패</th>
+                <th class="num hide-sm">승률</th>
+                <th class="num" th:classappend="${sort.name() == 'RATE'} ? 'sorted'">보정 승률</th>
+                <th class="num" th:classappend="${sort.name() == 'POWER'} ? 'sorted'">전력</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="row : ${rows}" th:with="s=${row.stats()}"
+                th:classappend="${row.podium} ? |podium podium-${row.rank()}| : (${row.rank() == null} ? 'unranked')">
+                <td class="num rank-cell" th:text="${row.rank()} ?: '-'">1</td>
+                <td><a th:href="@{/players/{id}(id=${row.player().id})}" th:text="${row.player().name}">홍길동</a></td>
+                <td class="hide-sm"><span class="tier" th:classappend="|tier-${row.player().mainLaneTier}|"
+                          th:text="${row.player().mainLaneLabel}">골드</span>
+                    <small class="lane-tiers" th:text="${row.player().mainPosition}">MID</small></td>
+                <td class="num" th:text="${s.games()}">0</td>
+                <td class="num" th:classappend="${sort.name() == 'WINS'} ? 'sorted'" th:text="${s.wins()}">0</td>
+                <td class="num hide-sm" th:text="${s.losses()}">0</td>
+                <td class="num hide-sm" th:text="${s.winRateText()}">-</td>
+                <td class="num" th:classappend="${sort.name() == 'RATE'} ? 'sorted'" th:text="${row.ratingText()}">50%</td>
+                <td class="num" th:classappend="${sort.name() == 'POWER'} ? 'sorted'"
+                    th:text="${row.power()} != null ? ${#numbers.formatDecimal(row.power(), 1, 1)} : '-'">4.0</td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(rows)}">
+                <td class="empty" colspan="9">등록된 플레이어가 없습니다.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <p class="muted">순위 "-"는 아직 순위에 들지 않은 사람입니다 (승률·다승: 경기 기록 없음, 전력: 라인별 티어 미입력).
+        같은 기록이면 같은 순위예요. 삭제된 경기와 플레이어는 빠집니다.</p>
+</main>
+</body>
+</html>
