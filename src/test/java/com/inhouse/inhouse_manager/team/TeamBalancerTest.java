@@ -71,7 +71,7 @@ class TeamBalancerTest {
 
         TeamSplit split = teamBalancer.split(candidates);
 
-        assertThat(split.distributionDiff()).isLessThan(1e-9);
+        assertThat(split.laneDiff()).isLessThan(1e-9);
         assertThat(split.blue().playerIds()).containsAnyOf(1L, 2L).containsAnyOf(3L, 4L);
         assertThat(split.blue().playerIds().contains(1L)).isNotEqualTo(split.blue().playerIds().contains(2L));
         assertThat(split.blue().playerIds().contains(3L)).isNotEqualTo(split.blue().playerIds().contains(4L));
@@ -215,9 +215,10 @@ class TeamBalancerTest {
     }
 
     @Test
-    void 다른_라인_가는_사람을_줄이는_것보다_두_팀_감점을_같게_하는_것을_먼저_본다() {
+    void 라인_맞대결을_우선해서_한_명만_부_포지션으로_보낸다() {
         // 탑·정글·원딜 주포 2명씩, 미드 주포 3명(7번은 부 포지션 서폿), 서폿 주포 1명
-        // 한 팀만 7번이 서폿(-1)을 가면 실력 차이가 1 생긴다 → 두 팀 감점이 같은 쪽(-2 대 -2)을 고른다 (2026-11-26 사용자 결정)
+        // 2026-11-26 사용자 결정: 두 팀 합을 0으로 맞추려고 양 팀 모두 다른 라인(-2 대 -2)을 보내기보다,
+        // 7번 한 명만 서폿(부, -1)으로 보내서 라인마다 상대가 비슷한 쪽을 고른다 (예전 결정을 바꿈)
         List<Candidate> candidates = new ArrayList<>();
         long id = 1;
         for (Position position : List.of(Position.TOP, Position.JUNGLE, Position.ADC)) {
@@ -231,8 +232,12 @@ class TeamBalancerTest {
 
         TeamSplit split = teamBalancer.split(candidates);
 
-        assertThat(split.powerDiff()).isLessThan(1e-9);
-        assertThat(split.blue().positionPenalty()).isEqualTo(split.red().positionPenalty());
+        var teamWithSeven = split.blue().playerIds().contains(7L) ? split.blue() : split.red();
+        Assignment seven = assignmentAt(teamWithSeven, Position.SUPPORT);
+        assertThat(seven.player().playerId()).isEqualTo(7L);
+        assertThat(seven.fit()).isEqualTo(1);
+        assertThat(split.blue().positionPenalty() + split.red().positionPenalty()).isEqualTo(1.0);
+        assertThat(split.laneDiff()).isEqualTo(1.0);
     }
 
     /** 한 라인만 다이아(7)이고 나머지는 브론즈(2)인 사람. 주 포지션은 모두 미드로 둔다 */
@@ -307,6 +312,55 @@ class TeamBalancerTest {
         assertThat(split.powerDiff()).isLessThan(1e-9);
         assertThat(split.blue().power()).isEqualTo(35.0);
         assertThat(split.blue().positionPenalty() + split.red().positionPenalty()).isEqualTo(0.0);
+    }
+
+    /** 다섯 라인 모두 같은 티어 (어느 라인에 가도 같은 실력) */
+    private static Candidate flex(long id, Tier tier) {
+        return new Candidate(id, "p" + id, Position.MID, null, "-", 4, 0.5, new LaneTiers(tier, tier, tier, tier, tier));
+    }
+
+    @Test
+    void 라인끼리_맞대결이_비슷하도록_배치한다() {
+        // 다이아 2명, 아이언 2명, 골드 6명 (모두 어느 라인이든 같은 실력)
+        // 팀 합만 맞추면 블루 다이아가 탑, 레드 다이아가 미드에 설 수도 있다 → 같은 라인에서 다이아끼리 만나야 한다
+        Tier[] tiers = {Tier.DIAMOND, Tier.DIAMOND, Tier.IRON, Tier.IRON,
+                Tier.GOLD, Tier.GOLD, Tier.GOLD, Tier.GOLD, Tier.GOLD, Tier.GOLD};
+        List<Candidate> candidates = new ArrayList<>();
+        for (int i = 0; i < tiers.length; i++) {
+            candidates.add(flex(i + 1, tiers[i]));
+        }
+
+        TeamSplit split = teamBalancer.split(candidates);
+
+        assertThat(split.laneDiff()).isLessThan(1e-9);
+        for (int i = 0; i < 5; i++) {
+            assertThat(split.blue().assignments().get(i).tierScore())
+                    .isEqualTo(split.red().assignments().get(i).tierScore());
+        }
+    }
+
+    @Test
+    void 라인마다_비슷한_두_사람끼리라서_어느_라인을_맞바꿔도_균형이_그대로다() {
+        Tier[] tiers = {Tier.DIAMOND, Tier.DIAMOND, Tier.IRON, Tier.IRON,
+                Tier.GOLD, Tier.GOLD, Tier.SILVER, Tier.SILVER, Tier.PLATINUM, Tier.PLATINUM};
+        List<Candidate> candidates = new ArrayList<>();
+        for (int i = 0; i < tiers.length; i++) {
+            candidates.add(flex(i + 1, tiers[i]));
+        }
+        TeamSplit split = teamBalancer.split(candidates);
+
+        // 5개 라인 중 어떤 조합을 바꿔도 (32가지) 실력 차이와 라인 맞대결 차이가 0이다
+        for (int mask = 0; mask < 32; mask++) {
+            Set<Position> swap = new java.util.HashSet<>();
+            for (Position position : Position.values()) {
+                if ((mask & (1 << position.ordinal())) != 0) {
+                    swap.add(position);
+                }
+            }
+            TeamSplit swapped = teamBalancer.swapPairs(split, swap);
+            assertThat(swapped.powerDiff()).isLessThan(1e-9);
+            assertThat(swapped.laneDiff()).isLessThan(1e-9);
+        }
     }
 
     @Test

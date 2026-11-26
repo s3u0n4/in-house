@@ -13,7 +13,7 @@
             <h1 th:text="${shuffled} ? '팀 나누기 결과 · 랜덤 교체' : '팀 나누기 결과'">팀 나누기 결과</h1>
             <p class="sub">
                 두 팀 실력 차이 <strong th:text="${#numbers.formatDecimal(split.powerDiff(), 1, 1)}">0.4</strong>
-                · 티어 구성 차이 <strong th:text="${#numbers.formatDecimal(split.distributionDiff(), 1, 1)}">2.0</strong>
+                · 라인 맞대결 차이 <strong th:text="${#numbers.formatDecimal(split.laneDiff(), 1, 1)}">2.0</strong>
                 <span>(0에 가까울수록 공평)</span>
                 <th:block th:if="${shuffled}">
                     · 바꾼 라인 <strong th:text="${#strings.setJoin(swappedPositions, ', ')}">TOP, MID</strong>
@@ -52,11 +52,12 @@
         (내전에서 많이 이기면 최대 +2, 많이 지면 최대 -2). 마스터 이상은 LP를 적었으면 8 + LP ÷ 500점입니다 (500LP = 9점).
         선수 옆 티어도 맡은 라인의 티어입니다. 라인별 티어를 아직 안 넣은 사람은 오늘 참가자 평균으로 치고,
         주 포지션이 아니면 깎습니다 (부 포지션 -1, 그 외 포지션 -2).
-        두 팀 전력 합이 비슷하고, 잘하는 사람이 한쪽에 몰리지 않게 나눈 뒤, 다들 잘하는 라인을 맡는 배치를 고릅니다.
+        두 팀 전력 합이 비슷하고, 같은 라인끼리 상대가 비슷하도록(라인 맞대결) 나눈 뒤, 다들 잘하는 라인을 맡는 배치를 고릅니다.
         배지: <span class="badge fit-2">주</span> 주 포지션 · <span class="badge fit-1">부</span> 부 포지션
         · <span class="badge fit-0">-</span> 그 외</p>
-    <p class="muted"><strong>랜덤으로 바꾸기</strong>: 같은 라인끼리(블루 탑 ↔ 레드 탑 …) 몇 쌍을 무작위로 맞바꿉니다.
-        포지션은 그대로이고, 바뀐 사람에게 "⇄ 교체"가 붙습니다. 한 팀이 너무 세지는 조합은 빼고 고릅니다.</p>
+    <p class="muted"><strong>랜덤으로 바꾸기</strong>: 같은 라인에서 맞붙는 두 사람끼리만(블루 탑 ↔ 레드 탑 …) 몇 쌍을 무작위로 맞바꿉니다.
+        라인마다 비슷한 상대끼리 짝지어져 있어서 바꿔도 균형이 크게 안 깨집니다. 포지션은 그대로이고, 바뀐 사람에게 "⇄ 교체"가 붙습니다.
+        그래도 한 팀이 너무 세지는 조합은 빼고 고릅니다.</p>
 
     <div class="actions">
         <a class="btn primary"

@@ -21,8 +21,8 @@ public class TeamBalancer {
 
     /** 내전 승률 보정의 크기. 보정 승률이 0.5에서 멀어질수록 최대 ±2 티어만큼 전력 점수가 바뀐다 */
     static final double WIN_RATE_WEIGHT = 4.0;
-    /** 티어 분포 차이를 전력 차이와 비교할 때 곱하는 값 */
-    static final double DISTRIBUTION_WEIGHT = 0.5;
+    /** 라인 맞대결 차이를 전력 차이와 비교할 때 곱하는 값 */
+    static final double LANE_WEIGHT = 0.5;
     /** 불균형 점수가 최소값 + 이 값 이내면 "비슷하다"고 보고 포지션 적합도로 고른다 */
     static final double COST_TOLERANCE = 0.5;
     /**
@@ -122,10 +122,6 @@ public class TeamBalancer {
             return assignments.stream().map(a -> a.player().playerId()).toList();
         }
 
-        /** 티어 점수를 높은 순으로 정렬한 목록 (분포 비교용) */
-        List<Double> tierScoresDescending() {
-            return assignments.stream().map(Assignment::tierScore).sorted(Comparator.reverseOrder()).toList();
-        }
     }
 
     public record TeamSplit(Lineup blue, Lineup red) {
@@ -135,22 +131,21 @@ public class TeamBalancer {
         }
 
         /**
-         * 티어 분포 차이: 각 팀 티어를 높은 순으로 세워 1등끼리, 2등끼리 ... 비교한 차이의 합.
-         * 합이 같아도 "다이아 둘 + 아이언 둘" 대 "골드 넷"처럼 구성이 다르면 커진다.
+         * 라인 맞대결 차이: 블루 탑 ↔ 레드 탑, 블루 정글 ↔ 레드 정글 … 같은 라인끼리 전력 차이를 더한 값 (2026-11-26).
+         * 두 팀 합이 같아도 "탑은 다이아 대 아이언, 미드는 아이언 대 다이아"처럼 라인마다 한쪽이 압도하면 커진다.
+         * 라인끼리 비슷하면 그 두 사람을 맞바꿔도(랜덤 교체) 균형이 거의 그대로다.
          */
-        public double distributionDiff() {
-            List<Double> blueTiers = blue.tierScoresDescending();
-            List<Double> redTiers = red.tierScoresDescending();
+        public double laneDiff() {
             double diff = 0;
-            for (int i = 0; i < blueTiers.size(); i++) {
-                diff += Math.abs(blueTiers.get(i) - redTiers.get(i));
+            for (int i = 0; i < TEAM_SIZE; i++) {
+                diff += Math.abs(blue.assignments().get(i).power() - red.assignments().get(i).power());
             }
             return diff;
         }
 
         /** 불균형 점수. 작을수록 공평하다 */
         public double cost() {
-            return powerDiff() + DISTRIBUTION_WEIGHT * distributionDiff();
+            return powerDiff() + LANE_WEIGHT * laneDiff();
         }
 
         int fit() {
@@ -179,7 +174,7 @@ public class TeamBalancer {
             for (int i = 0; i < PLAYER_COUNT; i++) {
                 ((mask & (1 << i)) != 0 ? blue : red).add(candidates.get(i));
             }
-            splits.add(new TeamSplit(bestLineup(blue), bestLineup(red)));
+            splits.add(bestLaneMatch(bestLineups(blue), bestLineups(red)));
         }
 
         double minCost = splits.stream().mapToDouble(TeamSplit::cost).min().orElseThrow();
@@ -214,12 +209,13 @@ public class TeamBalancer {
     }
 
     /**
-     * 5명을 5개 포지션에 배치하는 120가지 중 팀 전력이 가장 높은 배치. 전력이 같으면 주 포지션이 많은 배치.
+     * 5명을 5개 포지션에 배치하는 120가지 중 팀 전력이 가장 높은 배치들 (전력이 같으면 주 포지션이 많은 배치만).
      * 라인별 티어가 있는 사람은 잘하는 라인으로, 없는 사람은 주 포지션 → 부 포지션 순으로 간다.
+     * 똑같이 좋은 배치가 여러 개일 수 있어서 모두 돌려준다 (그중 상대 팀과 라인 맞대결이 가장 비슷한 것을 고른다).
      */
-    private Lineup bestLineup(List<Candidate> members) {
+    private List<Lineup> bestLineups(List<Candidate> members) {
         Position[] positions = Position.values();
-        Lineup best = null;
+        List<Lineup> best = new ArrayList<>();
         for (int[] order : POSITION_ORDERS) {
             List<Assignment> assignments = new ArrayList<>();
             for (int i = 0; i < TEAM_SIZE; i++) {
@@ -227,9 +223,34 @@ public class TeamBalancer {
             }
             assignments.sort(Comparator.comparing(Assignment::position));
             Lineup lineup = new Lineup(assignments);
-            if (best == null || lineup.power() > best.power() + 1e-9
-                    || (Math.abs(lineup.power() - best.power()) <= 1e-9 && lineup.fit() > best.fit())) {
-                best = lineup;
+            int compare = best.isEmpty() ? 1 : compareLineups(lineup, best.get(0));
+            if (compare > 0) {
+                best.clear();
+            }
+            if (compare >= 0) {
+                best.add(lineup);
+            }
+        }
+        return best;
+    }
+
+    /** 전력이 높으면 더 좋은 배치, 전력이 같으면 주 포지션이 많은 배치 */
+    private static int compareLineups(Lineup a, Lineup b) {
+        if (Math.abs(a.power() - b.power()) > 1e-9) {
+            return a.power() > b.power() ? 1 : -1;
+        }
+        return Integer.compare(a.fit(), b.fit());
+    }
+
+    /** 두 팀의 가장 좋은 배치끼리 짝지어 보고, 라인 맞대결 차이가 가장 작은 조합 */
+    private static TeamSplit bestLaneMatch(List<Lineup> blues, List<Lineup> reds) {
+        TeamSplit best = null;
+        for (Lineup blue : blues) {
+            for (Lineup red : reds) {
+                TeamSplit split = new TeamSplit(blue, red);
+                if (best == null || split.laneDiff() < best.laneDiff() - 1e-9) {
+                    best = split;
+                }
             }
         }
         return best;
