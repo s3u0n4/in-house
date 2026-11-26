@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
- * 로그인 화면과 관리자 전용 휴지통. /admin/** 은 SecurityConfig에서 관리자만 들어오게 막는다.
+ * 로그인 화면과 관리자 전용 화면(등록 신청 승인, 휴지통). /admin/** 은 SecurityConfig에서 관리자만 들어오게 막는다.
  */
 @Controller
 @RequiredArgsConstructor
@@ -23,6 +23,26 @@ public class AdminController {
     @GetMapping("/login")
     public String loginForm() {
         return "login";
+    }
+
+    @GetMapping("/admin/pending")
+    public String pending(Model model) {
+        model.addAttribute("pendingPlayers", playerService.findPending());
+        return "admin-pending";
+    }
+
+    @PostMapping("/admin/players/{id}/approve")
+    public String approve(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        playerService.approve(id);
+        redirectAttributes.addFlashAttribute("message", "등록 신청을 승인했습니다. 이제 플레이어 목록에 나와요.");
+        return "redirect:/admin/pending";
+    }
+
+    @PostMapping("/admin/players/{id}/reject")
+    public String reject(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        playerService.reject(id);
+        redirectAttributes.addFlashAttribute("message", "등록 신청을 거절했습니다.");
+        return "redirect:/admin/pending";
     }
 
     @GetMapping("/admin/trash")

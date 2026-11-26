@@ -1,0 +1,53 @@
+<!doctype html>
+<!-- 관리자 전용: 등록 신청을 승인하거나 거절한다 -->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('승인 대기')}">
+    <meta charset="UTF-8">
+    <title>승인 대기</title>
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: header('pending')}"></th:block>
+
+<main class="container">
+    <div class="page-head">
+        <div>
+            <h1>승인 대기</h1>
+            <p class="sub">누군가 보낸 플레이어 등록 신청이에요. 승인하면 플레이어 목록과 팀 나누기에 나오고,
+                거절하면 신청이 지워져요 (같은 라이엇 ID로 다시 신청할 수 있어요).</p>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+            <tr><th>이름</th><th>라이엇 ID</th><th>주 / 부 포지션</th><th>라인별 티어</th><th></th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="player : ${pendingPlayers}">
+                <td th:text="${player.name}">철수</td>
+                <td th:text="${player.riotId}">철수#KR1</td>
+                <td th:text="|${player.mainPosition} / ${player.subPosition ?: '-'}|">MID / TOP</td>
+                <td class="wrap" th:text="${player.laneSummary}">탑 골드 · 정글 실버 · 미드 골드 · 원딜 실버 · 서폿 브론즈</td>
+                <td>
+                    <div class="row-actions">
+                        <form th:action="@{/admin/players/{id}/approve(id=${player.id})}" method="post">
+                            <button class="btn small primary" type="submit">승인</button>
+                        </form>
+                        <!-- 이름은 누구나 적을 수 있는 값이라 자바스크립트 코드에 직접 넣지 않고 data- 속성으로 넘긴다 (Thymeleaf가 안전하게 바꿔 준다) -->
+                        <form th:action="@{/admin/players/{id}/reject(id=${player.id})}" method="post"
+                              th:data-confirm="|${player.name} 님의 등록 신청을 거절할까요?|"
+                              onsubmit="return confirm(this.dataset.confirm)">
+                            <button class="btn small danger" type="submit">거절</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(pendingPlayers)}">
+                <td class="empty" colspan="5">승인 대기 중인 신청이 없습니다.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+</body>
+</html>

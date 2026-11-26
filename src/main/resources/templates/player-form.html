@@ -2,7 +2,7 @@
 <!-- 등록과 수정이 같이 쓰는 화면. playerId가 없으면 등록, 있으면 수정 -->
 <html lang="ko" xmlns:th="http://www.thymeleaf.org"
       th:with="editing=${playerId != null}">
-<head th:replace="~{fragments/layout :: head(${playerId != null} ? '플레이어 수정' : '플레이어 등록')}">
+<head th:replace="~{fragments/layout :: head(${playerId != null} ? '플레이어 수정' : (${isAdmin} ? '플레이어 등록' : '등록 신청'))}">
     <meta charset="UTF-8">
     <title>플레이어 등록</title>
 </head>
@@ -11,7 +11,10 @@
 
 <main class="container">
     <div class="page-head">
-        <h1 th:text="${editing} ? '플레이어 수정' : '플레이어 등록'">플레이어 등록</h1>
+        <div>
+            <h1 th:text="${editing} ? '플레이어 수정' : (${isAdmin} ? '플레이어 등록' : '등록 신청')">플레이어 등록</h1>
+            <p class="sub" th:if="${!editing and !isAdmin}">신청하면 관리자가 확인하고 승인해요. 승인되면 플레이어 목록과 팀 나누기에 나와요.</p>
+        </div>
     </div>
 
     <form class="form card"
@@ -108,7 +111,7 @@
             </div>
         </fieldset>
         <div class="actions">
-            <button class="btn primary" type="submit" th:text="${editing} ? '저장' : '등록'">등록</button>
+            <button class="btn primary" type="submit" th:text="${editing} ? '저장' : (${isAdmin} ? '등록' : '신청')">등록</button>
             <a class="btn" th:href="${editing} ? @{/players/{id}(id=${playerId})} : @{/players}">취소</a>
         </div>
     </form>

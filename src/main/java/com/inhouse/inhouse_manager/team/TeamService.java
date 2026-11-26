@@ -46,7 +46,7 @@ public class TeamService {
 
         // id 순으로 정렬해 두면 같은 참가자를 고르면 항상 같은 결과가 나온다
         List<Player> players = playerRepository.findAllById(distinctIds).stream()
-                .filter(player -> !player.isDeleted())
+                .filter(Player::isActive)
                 .sorted(Comparator.comparing(Player::getId))
                 .toList();
         if (players.size() != TeamBalancer.PLAYER_COUNT) {

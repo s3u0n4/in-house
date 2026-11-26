@@ -1,5 +1,6 @@
 package com.inhouse.inhouse_manager.player;
 
+import jakarta.servlet.http.HttpServletRequest;
 import com.inhouse.inhouse_manager.stats.StatsService;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Valid;
@@ -104,34 +105,40 @@ public class PlayerController {
         return "player-form";
     }
 
+    /**
+     * 관리자가 등록하면 바로 목록에 나오고, 다른 사람이 등록하면 "등록 신청"이 되어 관리자가 승인해야 나온다.
+     * (누가 관리자인지는 스프링 시큐리티가 로그인 정보로 알려준다: request.isUserInRole)
+     */
     @PostMapping("/players")
     public String create(@Valid @ModelAttribute PlayerForm playerForm, BindingResult bindingResult, Model model,
-                         RedirectAttributes redirectAttributes){
+                         HttpServletRequest request, RedirectAttributes redirectAttributes){
+        boolean admin = request.isUserInRole("ADMIN");
         if (bindingResult.hasErrors()){
             addFormOptions(model, null);
             return "player-form";
         }
         try {
-            playerService.register(
-                    playerForm.getName(),
-                    playerForm.getRiotId(),
-                    playerForm.getMainPosition(),
-                    playerForm.getSubPosition(),
-                    playerForm.toLaneTiers()
-            );
+            if (admin) {
+                playerService.register(playerForm.getName(), playerForm.getRiotId(), playerForm.getMainPosition(),
+                        playerForm.getSubPosition(), playerForm.toLaneTiers());
+            } else {
+                playerService.requestRegistration(playerForm.getName(), playerForm.getRiotId(),
+                        playerForm.getMainPosition(), playerForm.getSubPosition(), playerForm.toLaneTiers());
+            }
         } catch (IllegalArgumentException e) {
             bindingResult.rejectValue("riotId", "duplicate", e.getMessage());
             addFormOptions(model, null);
             return "player-form";
         }
         // 플래시 속성: redirect 된 다음 화면에서 딱 한 번만 보이는 값
-        redirectAttributes.addFlashAttribute("message", "플레이어를 등록했습니다.");
+        redirectAttributes.addFlashAttribute("message", admin ? "플레이어를 등록했습니다."
+                : "등록 신청을 보냈어요. 관리자가 승인하면 플레이어 목록에 나와요.");
         return "redirect:/players";
     }
 
     @GetMapping("/players/{id}")
     public String detail(@PathVariable Long id, Model model) {
-        model.addAttribute("player", playerService.findById(id));
+        model.addAttribute("player", playerService.findVisibleById(id));
         model.addAttribute("record", statsService.recordOf(id));
         return "player-detail";
     }

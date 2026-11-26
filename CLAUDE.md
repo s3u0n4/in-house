@@ -3,7 +3,7 @@
 League of Legends 내전(커스텀 게임) 참가자, 팀 나누기, 경기 결과와 전적을 관리하는 웹 애플리케이션.
 사용자가 Spring을 처음 배우면서 만드는 첫 프로젝트다.
 
-기획 문서: [요구사항명세서](docs/requirements.md), [화면설계서](docs/screen-design.md). 기능을 바꾸면 문서도 같이 고친다.
+기획 문서: [요구사항명세서](docs/requirements.md), [화면설계서](docs/screen-design.md), [배포 안내](docs/deployment.md). 기능을 바꾸면 문서도 같이 고친다.
 
 ## 작업 규칙 (Claude가 반드시 지킬 것)
 - **2026-11-25부터 Claude가 코드를 직접 작성한다.** 사용자가 요청했다 ("내가 직접하는 거 그냥 너가 알아서 해주고"). 그 전까지는 사용자가 직접 작성하고 Claude는 설명만 했다. 사용자가 다시 직접 쓰겠다고 하면 설명 모드로 돌아간다.
@@ -18,7 +18,8 @@ League of Legends 내전(커스텀 게임) 참가자, 팀 나누기, 경기 결�
 - Java 21, Spring Boot 4.1.2, Gradle
 - Spring Web MVC, Spring Data JPA, Validation, Lombok, Thymeleaf
 - H2 파일 DB: `./data/inhouse` (`data/`는 gitignore 대상)
-- 스프링 시큐리티 (2026-11-25): 관리자 계정 1개. 아이디/비밀번호는 `config/application.properties`(gitignore, 스프링 부트가 자동으로 읽음)의 `inhouse.admin.username`/`inhouse.admin.password`. **GitHub 저장소가 public이므로 비밀번호를 커밋하지 말 것.** `/admin/**`와 H2 콘솔만 관리자 전용, 나머지는 누구나. 모든 POST에 CSRF 토큰 필요(`th:action`이 자동으로 넣음)
+- 스프링 시큐리티 (2026-11-25, 2026-11-26 배포 준비로 변경): 일반 사용자 로그인 없음, 관리자 계정 1개. 아이디/비밀번호는 `config/application.properties`(gitignore, 스프링 부트가 자동으로 읽음)의 `inhouse.admin.username`/`inhouse.admin.password`, 배포 서버는 환경 변수 `INHOUSE_ADMIN_*`. **GitHub 저장소가 public이므로 비밀번호를 커밋하지 말 것.** 누구나: 보기, 팀 나누기, 등록 신청(POST /players → 승인 대기). 관리자만: 그 밖의 모든 POST(기본값이 관리자 전용), 수정·경기 기록 화면, `/admin/**`, H2 콘솔. 관리자 버튼은 템플릿에서 `${isAdmin}`으로 숨긴다. 모든 POST에 CSRF 토큰 필요(`th:action`이 자동으로 넣음)
+- 배포(2026-11-26 준비만, 아직 안 함): `prod` 프로필(`application-prod.properties`) = PostgreSQL(드라이버 `org.postgresql:postgresql`), 접속 정보와 관리자 비밀번호는 환경 변수, 비밀번호 없으면 서버가 안 켜짐. 자세한 건 `docs/deployment.md`
 - 서버 포트 8081, H2 콘솔 `http://localhost:8081/h2-console` (관리자 로그인 필요. JDBC URL `jdbc:h2:file:./data/inhouse`, user `sa`, 비밀번호 없음)
 - Spring Boot 4라서 예전 자료와 import 경로가 다른 것이 있다. 예: `@DataJpaTest` → `org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest`
 - 화면: Thymeleaf (2026-11-20 결정). 공통 레이아웃은 `templates/fragments/layout.html`(head, header 조각), CSS는 `static/css/style.css` 하나.
@@ -31,15 +32,15 @@ src/main/java/com/inhouse/inhouse_manager/
  ├─ InhouseManagerApplication.java
  ├─ HomeController.java          GET / → redirect:/players
  ├─ admin/
- │   ├─ SecurityConfig.java      시큐리티 설정 + 관리자 계정(InMemoryUserDetailsManager)
- │   ├─ AdminAdvice.java         모든 화면에 isAdmin 전달
- │   └─ AdminController.java     GET /login, GET /admin/trash, POST /admin/{players|matches}/{id}/restore
+ │   ├─ SecurityConfig.java      시큐리티 설정(누가 무엇을 하는지) + 관리자 계정(InMemoryUserDetailsManager)
+ │   ├─ AdminAdvice.java         모든 화면에 isAdmin, pendingCount(승인 대기 수) 전달
+ │   └─ AdminController.java     GET /login, GET /admin/pending, POST /admin/players/{id}/approve|reject, GET /admin/trash, POST /admin/{players|matches}/{id}/restore
  ├─ common/
  │   └─ NotFoundException.java   @ResponseStatus(404). 없는 id 조회 시 → templates/error/404.html
  ├─ player/
  │   ├─ Player.java, Position.java, Tier.java(아이언 1 ~ 챌린저 10, 마스터 이상 LP 점수), PlayerRepository.java
  │   ├─ LaneTiers.java           라인별 티어 5개 + LP (@Embeddable record). Player.laneTiers, 옛 플레이어는 null
- │   ├─ PlayerService.java       등록/수정/삭제/조회. 삭제: 기록 없으면 DB 삭제, 있으면 소프트 삭제(deletedAt)
+ │   ├─ PlayerService.java       등록(관리자)/등록 신청(누구나, pending)/승인/거절/수정/삭제(소프트)/조회. findAll 등은 승인된 사람만
  │   ├─ PlayerController.java    /players, /players/new, /players/edit(목록 수정), /players/{id}, /players/{id}/edit, /players/{id}/delete
  │   ├─ PlayerForm.java          등록·수정 폼 + 검증 (라인별 티어·LP 필드, 부≠주 포지션)
  │   ├─ PlayerListForm.java      목록 수정 폼 (Row extends PlayerForm + id, @Valid 리스트)
@@ -66,13 +67,14 @@ src/main/java/com/inhouse/inhouse_manager/
      ├─ TeamService.java         id 10개 → 후보 만들기(라인별 티어 없으면 참가자 주 라인 티어 평균) → TeamBalancer
      └─ TeamController.java      /teams, /teams/result (GET, shuffle=seed면 5개 라인 각각 교체 여부를 랜덤으로, 1~4쌍 교체)
 src/main/resources/templates/
- ├─ fragments/layout.html, error.html, error/404.html, login.html, admin-trash.html
+ ├─ fragments/layout.html, error.html, error/404.html, login.html, admin-trash.html, admin-pending.html
  ├─ players.html, players-edit.html(목록 수정), player-form.html(등록·수정 같이 씀), player-detail.html
  ├─ matches.html, match-form.html, match-detail.html
  ├─ team-select.html, team-result.html
  └─ ranking.html
 src/test/java/com/inhouse/inhouse_manager/
  ├─ InhouseManagerApplicationTests.java  (메모리 DB로 컨텍스트 로드)
+ ├─ admin/SecurityTest           MockMvc로 권한 확인 (누구나/관리자, 등록 신청, CSRF)
  ├─ player/PlayerRepositoryTest, PlayerServiceTest
  ├─ match/MatchServiceTest
  ├─ stats/StatsServiceTest
@@ -86,7 +88,8 @@ src/test/java/com/inhouse/inhouse_manager/
 - 의존성 주입은 `private final` 필드 + `@RequiredArgsConstructor`.
 - 예외: 입력/업무 규칙 위반은 `IllegalArgumentException`(Controller에서 잡아 `rejectValue`/`reject`), 없는 id는 `NotFoundException`(404 화면).
 - 삭제는 모두 소프트 삭제 (플레이어, 경기 모두 `deletedAt`). 되돌리기는 관리자만 휴지통에서. 경기 조회 쿼리(목록, 상세, 전적)는 `deletedAt is null`을 붙인다.
-- 플레이어 소프트 삭제: `Player.deletedAt`이 있으면 삭제된 사람. 목록용 조회는 `PlayerService.findAll`/`findAllOrderByName`(삭제 제외), 수정·삭제는 `findActiveById`. 경기 기록 화면은 `player.displayName`("이름 (삭제됨)")을 쓴다. 새 조회를 만들 때 삭제된 사람을 빼야 하는지 꼭 확인할 것.
+- 플레이어 소프트 삭제와 승인 대기: `Player.deletedAt`이 있으면 삭제된 사람, `Player.pending`이면 승인 대기(등록 신청). `isActive()` = 둘 다 아님. 목록용 조회는 `PlayerService.findAll`/`findAllOrderByName`(삭제·승인 대기 제외), 수정·삭제는 `findActiveById`, 상세는 `findVisibleById`(승인 대기면 404). 경기 기록 화면은 `player.displayName`("이름 (삭제됨)")을 쓴다. 새 조회를 만들 때 삭제된 사람과 승인 대기를 빼야 하는지 꼭 확인할 것.
+- 누구나 입력하는 값(이름 등)을 자바스크립트 코드(`onsubmit="..."`)에 직접 넣지 않는다. 확인창 문구는 `th:data-confirm` + `confirm(this.dataset.confirm)`.
 - 저장·수정·삭제는 POST + redirect(PRG), 성공 문구는 `RedirectAttributes.addFlashAttribute("message", ...)`, 실패 문구는 `"errorMessage"`.
 - 서비스 테스트는 `@DataJpaTest` + `@Import(...)`, AssertJ는 `org.assertj.core.api.Assertions`. 테스트 메서드 이름은 한글.
 - Thymeleaf에서 record 값은 `${s.games()}`처럼 메서드 호출로 쓴다.
@@ -123,6 +126,7 @@ src/test/java/com/inhouse/inhouse_manager/
 > - 2026-11-26: 사용자 요청("입력값을 바꿔서 직접 테스트")으로 메모리 DB 서버에서 31가지 입력을 시험했다(등록·수정·목록 수정·팀 나누기·랜덤 교체·브라우저 LP 칸·휴대폰 폭). 찾은 문제 2개를 고쳤다: (1) LP에 abc/1.5, 조작된 티어·포지션 값을 보내면 "Failed to convert property value..." 영어 오류가 그대로 보임 → `messages.properties`에 typeMismatch 한국어 문구 추가 (2) 부 포지션을 주 포지션과 같게 저장할 수 있었음 → `PlayerForm.isSubPositionDifferent` (@AssertTrue). `PlayerFormTest` 추가, 테스트 70개.
 > - 2026-11-26: 랭킹 화면 추가 (`/ranking`, 헤더 메뉴 "랭킹"). 탭 3개: 승률(보정 승률, 기본)·다승·전력(주 라인 티어 + 내전 보정, `TeamBalancer.ratingBonus`를 같이 씀). 같은 기록은 같은 순위, 경기 없는 사람(전력은 라인 티어 없는 사람)은 순위 "-"로 맨 뒤. 1~3위 강조, 휴대폰에서는 열 3개 숨김. 실제 DB 복사본으로 화면 확인. 테스트 76개.
 > - 2026-11-26: 사용자 요청("랜덤 팀 나누기 할 때 라인마다 밸런스를 짜고 그 사람끼리만 교체")으로 불균형 점수의 "티어 분포 차이"를 "라인 맞대결 차이"(`TeamSplit.laneDiff`, 같은 라인 두 사람의 전력 차이 합)로 바꿨다. 팀 안에서 똑같이 좋은 배치가 여럿이면 상대와 라인이 가장 잘 맞는 배치를 쓴다(`bestLineups` + `bestLaneMatch`). 랜덤 교체는 원래대로 같은 라인 두 사람끼리만. 이 변경이 예전 결정("두 팀 감점 같게 우선")과 부딪혀서 사용자에게 물었고, **라인 맞대결 우선**으로 바꿨다(테스트 `라인_맞대결을_우선해서_한_명만_부_포지션으로_보낸다`). 실제 DB 복사본에서 응답 0.06~0.09초. 테스트 78개.
+> - 2026-11-26: 배포 준비 (사용자 요청: "로그인은 따로 안 하고 관리자 로그인만, 기록 변경은 관리자만, 등록은 관리자 승인"). 시큐리티를 "POST는 등록 신청만 누구나, 나머지는 관리자"로 바꾸고, 수정·경기 기록 화면도 관리자 전용. 관리자 버튼은 숨김. `Player.pending`(컬럼 `boolean default false`라 기존 플레이어는 승인된 상태로 들어감) + 승인 대기 화면(`/admin/pending`, 헤더에 수 표시, 로그인하면 이 화면으로). 승인 대기 화면의 거절 확인창을 처음에 이름을 JS에 직접 넣게 만들었다가 `th:data-confirm`으로 고쳤다. DB는 PostgreSQL 추천(무료 배포 서비스의 디스크는 재배포 때 지워지는 곳이 많음) → `prod` 프로필 + 드라이버 + `docs/deployment.md`. jar를 prod로 띄워(메모리 DB로 대신) 비밀번호 없으면 안 켜지는 것, 로그인, Secure 쿠키 확인. PostgreSQL 자체로는 아직 못 돌려 봤다(이 컴퓨터에 없음). `SecurityTest`(MockMvc) 추가, 테스트 91개. **배포할 서비스(Render, Railway 등)는 사용자와 아직 안 정했다.**
 > **현재 위치 (2026-11-25 세션 종료):** 오늘 작업은 모두 커밋하고 GitHub(`main`)에 푸시했다. 테스트 47개 통과.
 > - 마지막 기능(관리자 로그인과 휴지통)은 시험 서버(8082)에서만 확인했다. 사용자가 IntelliJ에서 **Gradle 새로고침(시큐리티 의존성 추가) 후 8081 재시작**을 아직 하지 않았을 수 있으니, 다음 세션 시작 때 먼저 확인할 것.
 > - 사용자 DB(8081) 상태 (2026-11-26): 플레이어 20명 = `#RAND` 10명(id 12~21) + 사용자 요청으로 추가한 `#NEW` 10명(id 22~31, 라인별 티어 무작위). 모두 라인별 티어가 있고, 마스터 이상 라인은 LP도 채웠다. 나머지는 삭제(휴지통). 사용자 요청으로 이 20명 중 무작위 10명씩 팀 나누기 결과(일부는 랜덤 교체)로 경기 8개를 넣었다(2026-11-13 ~ 11-25, 승패는 전력 차이를 약하게 반영한 무작위). 그 전의 경기 기록은 삭제된 테스트 플레이어들 것. 테스트 플레이어는 사용자가 원하면 목록 수정에서 삭제.
@@ -133,4 +137,4 @@ src/test/java/com/inhouse/inhouse_manager/
 2. 챔피언, KDA 기록
 3. 컨트롤러 테스트 (`@WebMvcTest`, 시큐리티와 CSRF 포함)
 4. 휴지통에서 영구 삭제
-5. 배포 (친구들이 링크로 보게) + Riot API 연동
+5. 배포 서비스 정하고 실제 배포 (준비는 끝남, `docs/deployment.md`) + Riot API 연동

@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.StringJoiner;
 
 @Entity
 @Getter
@@ -41,6 +42,13 @@ public class Player {
      */
     private LocalDateTime deletedAt;
 
+    /**
+     * 승인 대기. 누구나 등록 신청을 할 수 있고, 관리자가 승인하기 전까지는 목록·팀 나누기·경기 기록·랭킹에 나오지 않는다.
+     * 관리자가 직접 등록하면 처음부터 false. (DB에 컬럼을 새로 만들 때 기존 플레이어는 default false = 승인된 것으로 들어간다)
+     */
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean pending;
+
     public Player(String name, String riotId, Position mainPosition, Position subPosition, LaneTiers laneTiers) {
         this.name = name;
         this.riotId = riotId;
@@ -51,6 +59,23 @@ public class Player {
 
     public boolean isDeleted() {
         return deletedAt != null;
+    }
+
+    /** 목록, 팀 나누기, 새 경기 기록에 쓸 수 있는 플레이어 (삭제되지 않았고 승인된 사람) */
+    public boolean isActive() {
+        return !isDeleted() && !pending;
+    }
+
+    /** 등록 신청으로 만든다 (승인 대기) */
+    static Player requested(String name, String riotId, Position mainPosition, Position subPosition, LaneTiers laneTiers) {
+        Player player = new Player(name, riotId, mainPosition, subPosition, laneTiers);
+        player.pending = true;
+        return player;
+    }
+
+    /** 관리자가 등록 신청을 승인한다 */
+    public void approve() {
+        this.pending = false;
     }
 
     /** 경기 기록 화면에 보여줄 이름. 삭제된 플레이어는 "(삭제됨)"을 붙인다 */
@@ -96,6 +121,19 @@ public class Player {
     /** 주 포지션의 라인 티어 (목록 화면의 티어 배지 색). 라인별 티어가 없으면 null */
     public Tier getMainLaneTier() {
         return hasLaneTiers() ? laneTiers.of(mainPosition) : null;
+    }
+
+    /** 다섯 라인의 티어를 한 줄로. 예: "탑 골드 · 정글 실버 · 미드 마스터 350LP · 원딜 골드 · 서폿 브론즈". 없으면 "-" */
+    public String getLaneSummary() {
+        if (!hasLaneTiers()) {
+            return "-";
+        }
+        String[] names = {"탑", "정글", "미드", "원딜", "서폿"};
+        StringJoiner joiner = new StringJoiner(" · ");
+        for (Position position : Position.values()) {
+            joiner.add(names[position.ordinal()] + " " + laneTiers.labelOf(position));
+        }
+        return joiner.toString();
     }
 
     /** 주 포지션의 라인 티어 이름. 예: "다이아몬드", "마스터 350LP". 없으면 "-" */

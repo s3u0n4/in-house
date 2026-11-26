@@ -373,3 +373,9 @@ body:has(.drag-ghost) { cursor: grabbing; user-select: none; }
 /* 순위에 들지 않는 사람은 흐리게 */
 .ranking-table tr.unranked td { color: var(--dim); }
 .ranking-table tr.unranked a { color: var(--muted); }
+
+/* ---------- 관리자: 승인 대기 ---------- */
+.row-actions { display: flex; gap: 6px; }
+/* 헤더 "승인 대기" 옆 신청 수 */
+.count-badge { display: inline-block; min-width: 18px; margin-left: 6px; padding: 0 5px; border-radius: 9px;
+    background: var(--red); color: #fff; font-family: var(--score); font-size: 12px; line-height: 18px; text-align: center; }

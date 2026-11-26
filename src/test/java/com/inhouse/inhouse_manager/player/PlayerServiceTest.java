@@ -29,6 +29,9 @@ public class PlayerServiceTest {
     @Autowired
     EntityManager entityManager;
 
+    @Autowired
+    PlayerRepository playerRepository;
+
     static final LaneTiers LANES = new LaneTiers(Tier.SILVER, Tier.BRONZE, Tier.PLATINUM, Tier.GOLD, Tier.IRON);
 
     @Test
@@ -42,6 +45,55 @@ public class PlayerServiceTest {
         assertThat(found.getLaneTiers()).isEqualTo(LANES);
         assertThat(found.getLaneTiers().of(Position.MID)).isEqualTo(Tier.PLATINUM);
         assertThat(found.hasLaneTiers()).isTrue();
+    }
+
+    @Test
+    void 등록_신청은_승인_전까지_목록에_나오지_않는다() {
+        Long approved = playerService.register("철수", "철수#KR1", Position.MID, null, LANES);
+        Long requested = playerService.requestRegistration("영희", "영희#KR1", Position.TOP, null, LANES);
+
+        assertThat(playerService.findAll()).extracting(Player::getId).containsExactly(approved);
+        assertThat(playerService.findPending()).extracting(Player::getId).containsExactly(requested);
+        assertThat(playerService.countPending()).isEqualTo(1);
+        assertThatThrownBy(() -> playerService.findVisibleById(requested)).isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> playerService.findActiveById(requested)).isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void 승인하면_목록에_나온다() {
+        Long requested = playerService.requestRegistration("영희", "영희#KR1", Position.TOP, null, LANES);
+
+        playerService.approve(requested);
+
+        assertThat(playerService.findAll()).extracting(Player::getId).containsExactly(requested);
+        assertThat(playerService.findPending()).isEmpty();
+    }
+
+    @Test
+    void 거절하면_지워지고_같은_라이엇ID로_다시_신청할_수_있다() {
+        Long requested = playerService.requestRegistration("영희", "영희#KR1", Position.TOP, null, LANES);
+
+        playerService.reject(requested);
+
+        assertThat(playerRepository.findById(requested)).isEmpty();
+        assertThat(playerService.requestRegistration("영희", "영희#KR1", Position.TOP, null, LANES)).isNotNull();
+    }
+
+    @Test
+    void 승인_대기_중인_라이엇ID로는_등록할_수_없다() {
+        playerService.requestRegistration("영희", "영희#KR1", Position.TOP, null, LANES);
+
+        assertThatThrownBy(() -> playerService.register("다른영희", "영희#KR1", Position.TOP, null, LANES))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("승인 대기");
+    }
+
+    @Test
+    void 이미_승인된_플레이어는_승인하거나_거절할_수_없다() {
+        Long approved = playerService.register("철수", "철수#KR1", Position.MID, null, LANES);
+
+        assertThatThrownBy(() -> playerService.approve(approved)).isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> playerService.reject(approved)).isInstanceOf(NotFoundException.class);
     }
 
     @Test

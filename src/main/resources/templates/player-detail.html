@@ -25,7 +25,7 @@
             </p>
         </div>
         <!-- 삭제된 플레이어는 지난 경기 기록에서 들어올 수만 있고, 수정이나 삭제는 할 수 없다 -->
-        <div class="actions" th:unless="${player.deleted}">
+        <div class="actions" th:if="${isAdmin and !player.deleted}">
             <a class="btn" th:href="@{/players/{id}/edit(id=${player.id})}">수정</a>
             <!-- 삭제는 데이터를 바꾸므로 링크(GET)가 아니라 폼(POST)으로 보낸다 -->
             <form th:action="@{/players/{id}/delete(id=${player.id})}" method="post"

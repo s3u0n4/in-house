@@ -43,7 +43,7 @@
                             <span class="card-rate" th:text="|${s.games()}경기 ${s.winRateText()}|">0경기 -</span>
                         </span>
                     </label>
-                    <p class="zone-empty" th:if="${#lists.isEmpty(players)}">등록된 플레이어가 없습니다. <a th:href="@{/players/new}">플레이어 등록하기</a></p>
+                    <p class="zone-empty" th:if="${#lists.isEmpty(players)}">등록된 플레이어가 없습니다. <a th:href="@{/players/new}" th:text="${isAdmin} ? '플레이어 등록하기' : '등록 신청하기'">플레이어 등록하기</a></p>
                 </div>
             </section>
 

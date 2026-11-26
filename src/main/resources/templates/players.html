@@ -11,8 +11,9 @@
     <div class="page-head">
         <h1>플레이어 목록</h1>
         <div class="actions">
-            <a class="btn" th:href="@{/players/edit}">목록 수정</a>
-            <a class="btn primary" th:href="@{/players/new}">+ 플레이어 등록</a>
+            <a class="btn" th:if="${isAdmin}" th:href="@{/players/edit}">목록 수정</a>
+            <!-- 관리자가 아니면 "등록 신청"이 되고, 관리자가 승인해야 목록에 나온다 -->
+            <a class="btn primary" th:href="@{/players/new}" th:text="${isAdmin} ? '+ 플레이어 등록' : '+ 등록 신청'">+ 플레이어 등록</a>
         </div>
     </div>
 
