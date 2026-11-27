@@ -53,7 +53,8 @@ class SecurityTest {
         return post("/players").with(csrf())
                 .param("name", name).param("riotId", riotId).param("mainPosition", "TOP")
                 .param("topTier", "GOLD").param("jungleTier", "GOLD").param("midTier", "GOLD")
-                .param("adcTier", "GOLD").param("supportTier", "GOLD");
+                .param("adcTier", "GOLD").param("supportTier", "GOLD")
+                .param("mainDivision", "2").param("mainLp", "50");
     }
 
     @Test

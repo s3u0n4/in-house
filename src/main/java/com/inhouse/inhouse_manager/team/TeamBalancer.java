@@ -30,8 +30,11 @@ public class TeamBalancer {
      * 라인별 티어를 넣은 사람은 그 라인의 티어를 그대로 쓰고 감점하지 않는다.
      */
     static final double OFF_ROLE_PENALTY = 1.0;
-    /** 라인 맞대결 차이가 모든 라인에서 이 값(티어 1단계) 이하여야 "라인별 밸런스가 맞다"고 보고 랜덤 교체를 허용한다 */
-    static final double LANE_BALANCE_LIMIT = 1.0;
+    /**
+     * 맞라인 차이 기준: 200점 (2026-11-28 사용자 요청, 예: 브론즈 1 0LP와 실버 3 0LP). 티어 1개 = 400점(4단계 × 100LP) = 1.0이라 0.5.
+     * 모든 라인이 이 안인 팀 나누기가 있으면 그중에서 고르고, 이 안이어야 "라인별 밸런스가 맞다"고 보고 랜덤 교체를 허용한다.
+     */
+    static final double LANE_BALANCE_LIMIT = 200.0 / Tier.LP_PER_TIER;
 
     private static final List<int[]> POSITION_ORDERS = permutations(TEAM_SIZE);
 
@@ -204,8 +207,12 @@ public class TeamBalancer {
             splits.add(bestLaneMatch(bestLineups(blue), bestLineups(red)));
         }
 
-        double minCost = splits.stream().mapToDouble(TeamSplit::cost).min().orElseThrow();
-        return splits.stream()
+        // 모든 라인의 맞대결이 200점 안인 경우가 있으면 그중에서만 고른다. 하나도 없으면 전체에서 고른다 (랜덤 교체는 막힌다)
+        List<TeamSplit> lanesMatched = splits.stream().filter(split -> split.unbalancedLanes().isEmpty()).toList();
+        List<TeamSplit> pool = lanesMatched.isEmpty() ? splits : lanesMatched;
+
+        double minCost = pool.stream().mapToDouble(TeamSplit::cost).min().orElseThrow();
+        return pool.stream()
                 .filter(split -> split.cost() <= minCost + COST_TOLERANCE + 1e-9)
                 .max(Comparator.comparingLong(TeamSplit::totalPower)
                         .thenComparingInt(TeamSplit::fit)

@@ -38,8 +38,8 @@ src/main/java/com/inhouse/inhouse_manager/
  ├─ common/
  │   └─ NotFoundException.java   @ResponseStatus(404). 없는 id 조회 시 → templates/error/404.html
  ├─ player/
- │   ├─ Player.java, Position.java, Tier.java(아이언 1 ~ 챌린저 10, 마스터 이상 LP 점수), PlayerRepository.java
- │   ├─ LaneTiers.java           라인별 티어 5개 + LP (@Embeddable record). Player.laneTiers, 옛 플레이어는 null
+ │   ├─ Player.java, Position.java, Tier.java(아이언 1 ~ 챌린저 10, 주 라인 단계·LP 점수: 티어 1개 = 400점, 마스터 이상 8+LP/500), PlayerRepository.java
+ │   ├─ LaneTiers.java           라인별 티어 5개 + 주 라인의 티어 안 LP (@Embeddable record). Player.laneTiers, 옛 플레이어는 null
  │   ├─ PlayerService.java       등록(관리자)/등록 신청(누구나, pending)/승인/거절/수정/삭제(소프트)/조회. findAll 등은 승인된 사람만
  │   ├─ PlayerController.java    /players, /players/new, /players/edit(목록 수정), /players/{id}, /players/{id}/edit, /players/{id}/delete
  │   ├─ PlayerForm.java          등록·수정 폼 + 검증 (라인별 티어·LP 필드, 부≠주 포지션)
@@ -131,6 +131,7 @@ src/test/java/com/inhouse/inhouse_manager/
 > - 2026-11-28: 사용자 요청("다른 화면들도 가운데 정렬, 관리자 로그인 영역을 더 크게")으로 가운데 배치를 모든 화면의 기본값으로 바꿨다(`.page-head`가 세로로 쌓이고 가운데 정렬, `centered` 클래스는 없앰). 오류 화면도 `narrow` 카드. 로그인 카드는 440px → 540px, 입력칸·버튼·제목을 키움. 1440px·375px에서 모든 화면을 찍어 확인.
 > - 2026-11-28: 사용자 요청("1팀 탑이 주라인이고 2팀 탑이 부라인이면 되도록 적은 티어에 맞게")으로 라인 맞대결 비교에 포지션 감점을 넣었다. 사용자가 고른 방식: **맞대결에서만** 주 포지션이 아닌 사람을 낮게 본다(부 -1, 그 외 -2, `Assignment.matchupPower`, `laneDiff`가 사용). 팀 전력(`power`)은 라인별 티어 그대로. 영향: 주 포지션과 가장 잘하는 라인이 다른 사람은 잘하는 라인에 가도 맞대결에서 낮게 계산된다(기존 테스트 `라인별_티어가_있는_사람과_없는_사람을_같이_나눈다`의 데이터를 "잘하는 라인 = 주 포지션"으로 바꿈). 테스트 93개.
 > - 2026-11-28: 사용자 요청("라인별로 티어가 비슷하면 랜덤 가능, 라인별 밸런스가 안 맞아서 팀 전력을 맞춘 거면 랜덤 불가라고 알려줘")으로 랜덤 교체 조건을 추가했다. 모든 라인의 맞대결 차이(`matchupPower` 차이)가 1(티어 1단계) 이하일 때만 가능(`TeamBalancer.LANE_BALANCE_LIMIT`, `TeamSplit.unbalancedLanes()`). 아니면 버튼 비활성화 + 어느 라인 때문인지 안내, 주소에 shuffle을 넣어도 무시하고 오류 플래시. 기준값 1은 Claude가 정함(사용자가 바꾸고 싶으면 상수만 고치면 됨). 메모리 DB 서버에서 두 경우 모두 확인. 테스트 95개.
+> - 2026-11-28: 사용자 요청으로 티어 세부 점수와 맞라인 200점 기준. (1) 주 라인만 최고 티어의 세부를 적는다: 아이언~다이아는 단계 1~4(1이 높음, 필수) + LP 0~99(비우면 0), 마스터 이상은 LP(마스터 0LP부터, 챌린저 컷 1000 가정이면 1000LP 이상이 챌린저). 다른 라인은 티어만. (2) 저장은 DB 컬럼 그대로: 라인의 lp 컬럼에 "티어 안에서 쌓은 LP"((4−단계)×100+LP, 0~399)를 넣는다. 점수 = 티어 + LP/400 (티어 1개 = 400점), 마스터 이상은 8 + LP/500 그대로. (3) `Player.getLaneTiers()`가 주 라인 LP만 남긴다(`LaneTiers.keepLpOnly`) → 예전에 마스터 이상 부 라인에 적은 LP는 안 쓴다. (4) 맞라인 기준 200점(=0.5, 예: 브론즈 1 0LP ↔ 실버 3 0LP): `LANE_BALANCE_LIMIT`. 랜덤 교체 허용 기준이자, 팀 나누기에서 모든 라인이 200점 안인 경우가 있으면 그중에서만 고른다. 폼: `PlayerForm.mainDivision`/`mainLp`(@AssertTrue로 단계 필수·LP 0~99 검사), 등록 화면에 "주 라인 최고 티어" 칸, 목록 수정에 "주 라인 단계 · LP" 열. **기존 플레이어는 주 라인 단계가 비어 있어서 "골드"처럼 보이고 4단계 0LP로 계산되며, 목록 수정으로 저장하려면 마스터 아래 주 라인인 줄마다 단계를 골라야 한다.** 메모리 DB 서버에서 등록·오류 문구·마스터 전환·목록 수정 저장 확인. 테스트 102개.
 > **현재 위치 (2026-11-26 세션 종료):** 오늘 작업은 모두 커밋하고 GitHub(`main`)에 푸시했다. 테스트 91개 통과.
 > - **다음 세션 시작 때 먼저 확인:** 사용자가 IntelliJ에서 **Gradle 새로고침(PostgreSQL 드라이버, security-test 추가) 후 8081 재시작**을 했는지. 재시작 전 8081은 예전 코드(누구나 수정 가능, 랭킹·승인 대기 없음)일 수 있다. 재시작하면 수정·삭제 버튼이 숨겨지니 "관리자"로 로그인해야 한다.
 > - **멈춘 곳: 배포 방식 결정 대기.** 사용자가 "요즘 현업에서 쓰는 기술"로 배포하고 싶다고 했다. Claude 추천: Docker + GitHub Actions(CI/CD)부터 만들고, 서버는 (A) Render/Railway + Neon PostgreSQL로 먼저 띄운 뒤 익숙해지면 (B) AWS(EC2 + RDS)로 옮기기. 사용자가 A/B와 GitHub Actions 사용 여부를 아직 답하지 않았다. 정해지면: `Dockerfile` 작성(이 컴퓨터에 Docker 없음 → 설치 안내), `.github/workflows`(푸시마다 테스트, 통과하면 배포), 서비스별 단계 안내. 가입·결제·DB 생성·비밀번호 입력은 사용자가 직접 (비밀번호를 Claude에게 받지 않는다). PostgreSQL에 실제로 붙여 본 적은 아직 없다 → 첫 배포 때 확인.

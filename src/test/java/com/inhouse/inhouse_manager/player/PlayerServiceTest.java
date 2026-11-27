@@ -97,17 +97,31 @@ public class PlayerServiceTest {
     }
 
     @Test
-    void 마스터_이상의_LP도_저장한다() {
-        LaneTiers withLp = new LaneTiers(Tier.MASTER, 350, Tier.GOLD, null, Tier.CHALLENGER, 1200,
+    void 주_라인의_LP를_저장한다() {
+        LaneTiers withLp = new LaneTiers(Tier.GOLD, null, Tier.GOLD, null, Tier.CHALLENGER, 1200,
                 Tier.GOLD, null, Tier.GOLD, null);
         Long id = playerService.register("철수", "철수#KR1", Position.MID, null, withLp);
         entityManager.flush();
         entityManager.clear();
 
         LaneTiers found = playerService.findById(id).getLaneTiers();
-        assertThat(found.lpOf(Position.TOP)).isEqualTo(350);
         assertThat(found.labelOf(Position.MID)).isEqualTo("챌린저 1200LP");
         assertThat(found.scoreOf(Position.MID)).isEqualTo(8 + 1200 / 500.0);
+    }
+
+    @Test
+    void 예전에_주_라인이_아닌_라인에_적은_LP는_쓰지_않는다() {
+        // 2026-11-28 전에는 마스터 이상이면 어느 라인이든 LP를 적을 수 있었다. 이제 주 라인만 세부 점수를 쓴다
+        LaneTiers old = new LaneTiers(Tier.MASTER, 350, Tier.GOLD, null, Tier.CHALLENGER, 1200,
+                Tier.GOLD, null, Tier.GOLD, null);
+        Long id = playerService.register("철수", "철수#KR1", Position.MID, null, old);
+        entityManager.flush();
+        entityManager.clear();
+
+        Player found = playerService.findById(id);
+        assertThat(found.getLaneTiers().lpOf(Position.TOP)).isNull();
+        assertThat(found.getLaneTiers().scoreOf(Position.TOP)).isEqualTo(8.0);
+        assertThat(found.getLaneSummary()).contains("탑 마스터 ·").contains("미드 챌린저 1200LP");
     }
 
     @Test

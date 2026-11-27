@@ -113,6 +113,14 @@ public class Player {
         this.laneTiers = laneTiers;
     }
 
+    /**
+     * 라인별 티어. 주 라인의 세부 LP만 남긴다 (2026-11-28부터 주 라인만 세부 점수를 쓴다.
+     * 그 전에 마스터 이상 부 라인에 적은 LP가 DB에 남아 있어도 화면과 팀 나누기에는 쓰지 않는다)
+     */
+    public LaneTiers getLaneTiers() {
+        return laneTiers == null ? null : laneTiers.keepLpOnly(mainPosition);
+    }
+
     /** 라인별 티어를 다 넣었는지. 안 넣었으면 팀 나누기는 그날 참가자 평균으로 계산한다 */
     public boolean hasLaneTiers() {
         return laneTiers != null && laneTiers.isComplete();
@@ -131,12 +139,12 @@ public class Player {
         String[] names = {"탑", "정글", "미드", "원딜", "서폿"};
         StringJoiner joiner = new StringJoiner(" · ");
         for (Position position : Position.values()) {
-            joiner.add(names[position.ordinal()] + " " + laneTiers.labelOf(position));
+            joiner.add(names[position.ordinal()] + " " + getLaneTiers().labelOf(position));
         }
         return joiner.toString();
     }
 
-    /** 주 포지션의 라인 티어 이름. 예: "다이아몬드", "마스터 350LP". 없으면 "-" */
+    /** 주 포지션의 라인 티어 이름. 예: "다이아몬드", "골드 3 50LP", "마스터 350LP". 없으면 "-" */
     public String getMainLaneLabel() {
         return hasLaneTiers() ? laneTiers.labelOf(mainPosition) : "-";
     }

@@ -14,7 +14,8 @@
             <div>
                 <h1>플레이어 목록 수정</h1>
                 <p class="sub">칸을 고친 뒤 저장을 누르면 한 번에 반영됩니다. 하나라도 잘못되면 아무것도 저장되지 않아요.<br>
-                    탑 ~ 서폿은 라인별 티어(본인이 생각하는 그 라인 실력)로, 다섯 칸 모두 골라야 저장됩니다. 마스터 이상은 LP를 적을 수 있어요(선택).<br>
+                    탑 ~ 서폿은 라인별 티어(본인이 생각하는 그 라인 실력)로, 다섯 칸 모두 골라야 저장됩니다.
+                    "주 라인 단계 · LP"는 주 포지션 라인의 최고 티어 세부예요: 아이언 ~ 다이아는 단계(1~4, 1이 가장 높음)와 LP(0~99), 마스터 이상은 LP만.<br>
                     지울 플레이어는 맨 오른쪽 <strong>삭제</strong>를 체크하세요. 지난 경기 기록에는 "(삭제됨)"으로 남고, 관리자가 휴지통에서 되돌릴 수 있어요.</p>
             </div>
             <div class="actions">
@@ -32,7 +33,7 @@
             <table class="edit-table">
                 <thead>
                 <tr><th>이름</th><th>라이엇 ID</th><th>주 포지션</th><th>부 포지션</th>
-                    <th>탑</th><th>정글</th><th>미드</th><th>원딜</th><th>서폿</th><th>삭제</th></tr>
+                    <th>탑</th><th>정글</th><th>미드</th><th>원딜</th><th>서폿</th><th>주 라인 단계 · LP</th><th>삭제</th></tr>
                 </thead>
                 <tbody>
                 <!-- rows[0], rows[1] ... : 줄 번호를 붙여야 서버에서 리스트로 받을 수 있다 -->
@@ -71,10 +72,6 @@
                             <option value="">선택</option>
                             <option th:each="t : ${laneTierOptions}" th:value="${t}" th:text="${t.label}">골드</option>
                         </select>
-                        <input type="number" class="lane-lp" th:field="*{rows[__${stat.index}__].topLp}" min="0" max="3000"
-                               placeholder="LP" th:attr="aria-label=|${stat.count}번째 탑 LP|">
-                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].topLp')}"
-                           th:errors="*{rows[__${stat.index}__].topLp}">탑 LP 오류</p>
                         <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].topTier')}"
                            th:errors="*{rows[__${stat.index}__].topTier}">탑 티어 오류</p>
                     </td>
@@ -83,10 +80,6 @@
                             <option value="">선택</option>
                             <option th:each="t : ${laneTierOptions}" th:value="${t}" th:text="${t.label}">골드</option>
                         </select>
-                        <input type="number" class="lane-lp" th:field="*{rows[__${stat.index}__].jungleLp}" min="0" max="3000"
-                               placeholder="LP" th:attr="aria-label=|${stat.count}번째 정글 LP|">
-                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].jungleLp')}"
-                           th:errors="*{rows[__${stat.index}__].jungleLp}">정글 LP 오류</p>
                         <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].jungleTier')}"
                            th:errors="*{rows[__${stat.index}__].jungleTier}">정글 티어 오류</p>
                     </td>
@@ -95,10 +88,6 @@
                             <option value="">선택</option>
                             <option th:each="t : ${laneTierOptions}" th:value="${t}" th:text="${t.label}">골드</option>
                         </select>
-                        <input type="number" class="lane-lp" th:field="*{rows[__${stat.index}__].midLp}" min="0" max="3000"
-                               placeholder="LP" th:attr="aria-label=|${stat.count}번째 미드 LP|">
-                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].midLp')}"
-                           th:errors="*{rows[__${stat.index}__].midLp}">미드 LP 오류</p>
                         <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].midTier')}"
                            th:errors="*{rows[__${stat.index}__].midTier}">미드 티어 오류</p>
                     </td>
@@ -107,10 +96,6 @@
                             <option value="">선택</option>
                             <option th:each="t : ${laneTierOptions}" th:value="${t}" th:text="${t.label}">골드</option>
                         </select>
-                        <input type="number" class="lane-lp" th:field="*{rows[__${stat.index}__].adcLp}" min="0" max="3000"
-                               placeholder="LP" th:attr="aria-label=|${stat.count}번째 원딜 LP|">
-                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].adcLp')}"
-                           th:errors="*{rows[__${stat.index}__].adcLp}">원딜 LP 오류</p>
                         <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].adcTier')}"
                            th:errors="*{rows[__${stat.index}__].adcTier}">원딜 티어 오류</p>
                     </td>
@@ -119,12 +104,27 @@
                             <option value="">선택</option>
                             <option th:each="t : ${laneTierOptions}" th:value="${t}" th:text="${t.label}">골드</option>
                         </select>
-                        <input type="number" class="lane-lp" th:field="*{rows[__${stat.index}__].supportLp}" min="0" max="3000"
-                               placeholder="LP" th:attr="aria-label=|${stat.count}번째 서폿 LP|">
-                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].supportLp')}"
-                           th:errors="*{rows[__${stat.index}__].supportLp}">서폿 LP 오류</p>
                         <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].supportTier')}"
                            th:errors="*{rows[__${stat.index}__].supportTier}">서폿 티어 오류</p>
+                    </td>
+                    <td>
+                        <!-- 주 라인 최고 티어의 세부: 아이언~다이아는 단계(1~4) + LP(0~99), 마스터 이상은 LP만 -->
+                        <div class="main-detail-cell">
+                            <select class="main-division" th:field="*{rows[__${stat.index}__].mainDivision}" th:attr="aria-label=|${stat.count}번째 주 라인 단계|">
+                                <option value="">단계</option>
+                                <option th:each="d : ${#numbers.sequence(1, 4)}" th:value="${d}" th:text="${d}">1</option>
+                            </select>
+                            <input type="number" class="main-lp" th:field="*{rows[__${stat.index}__].mainLp}" min="0" max="3000"
+                                   placeholder="LP" th:attr="aria-label=|${stat.count}번째 주 라인 LP|">
+                        </div>
+                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].mainDivision')}"
+                           th:errors="*{rows[__${stat.index}__].mainDivision}">단계 오류</p>
+                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].mainDivisionChosen')}"
+                           th:errors="*{rows[__${stat.index}__].mainDivisionChosen}">단계 오류</p>
+                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].mainLp')}"
+                           th:errors="*{rows[__${stat.index}__].mainLp}">LP 오류</p>
+                        <p class="field-error" th:if="${#fields.hasErrors('rows[__${stat.index}__].mainLpInDivision')}"
+                           th:errors="*{rows[__${stat.index}__].mainLpInDivision}">LP 오류</p>
                     </td>
                     <td class="delete-cell">
                         <!-- 삭제해도 지난 경기 기록에는 "(삭제됨)"으로 남고, 관리자가 휴지통에서 되돌릴 수 있다 -->
@@ -138,7 +138,7 @@
                     </td>
                 </tr>
                 <tr th:if="*{#lists.isEmpty(rows)}">
-                    <td class="empty" colspan="10">등록된 플레이어가 없습니다.</td>
+                    <td class="empty" colspan="11">등록된 플레이어가 없습니다.</td>
                 </tr>
                 </tbody>
             </table>
@@ -161,17 +161,29 @@
     });
 </script>
 <script>
-    // 마스터 이상을 고른 라인만 LP 칸을 보여준다. 자바스크립트가 꺼져 있으면 LP 칸이 항상 보인다 (마스터 아래면 서버가 LP를 버린다)
+    // 줄마다 주 포지션 라인의 티어가 마스터 이상이면 단계 칸을 숨기고 LP를 0~3000으로, 그 아래면 단계를 보이고 LP를 0~99로.
+    // 자바스크립트가 꺼져 있으면 두 칸이 항상 보이고, 서버가 티어에 맞게 검사한다
     (function () {
         var APEX = ['MASTER', 'GRANDMASTER', 'CHALLENGER'];
-        document.querySelectorAll('.lane-tier').forEach(function (select) {
-            var lp = select.parentElement.querySelector('.lane-lp');
-            function sync() {
-                var apex = APEX.indexOf(select.value) >= 0;
-                lp.hidden = !apex;
-                if (!apex) lp.value = '';
+        var LANE_FIELD = {TOP: 'topTier', JUNGLE: 'jungleTier', MID: 'midTier', ADC: 'adcTier', SUPPORT: 'supportTier'};
+        document.querySelectorAll('.edit-table tbody tr').forEach(function (row) {
+            var main = row.querySelector('select[name$=".mainPosition"]');
+            var division = row.querySelector('.main-division');
+            var lp = row.querySelector('.main-lp');
+            if (!main || !division) return;
+            function laneSelect() {
+                var field = LANE_FIELD[main.value];
+                return field ? row.querySelector('select[name$=".' + field + '"]') : null;
             }
-            select.addEventListener('change', sync);
+            function sync() {
+                var lane = laneSelect();
+                var apex = lane != null && APEX.indexOf(lane.value) >= 0;
+                division.hidden = apex;
+                if (apex) division.value = '';
+                lp.max = apex ? 3000 : 99;
+            }
+            main.addEventListener('change', sync);
+            row.querySelectorAll('.lane-tier').forEach(function (select) { select.addEventListener('change', sync); });
             sync();
         });
     })();

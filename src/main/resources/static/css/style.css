@@ -223,8 +223,16 @@ input[type=checkbox], input[type=radio] { width: 17px; height: 17px; cursor: poi
 .lane-fields .muted .btn { margin-left: 6px; vertical-align: middle; }
 .lane-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
 .lane-tiers { color: var(--muted); font-size: 13px; }
-.lane-lp { display: block; margin-top: 6px; }
-.lane-lp[hidden] { display: none; }
+/* 주 라인 최고 티어 (단계 + LP) */
+.main-detail { border-top: 1px dashed var(--line-strong); margin-top: 4px; padding-top: 14px; }
+.main-detail > .title { margin: 0 0 4px; font-weight: 700; font-size: 14px; color: var(--accent-strong); }
+.main-detail > .muted { margin: 0 0 12px; font-size: 13px; }
+.main-detail .inline-fields { max-width: none; }
+.form-row[hidden] { display: none; }
+/* 목록 수정 표의 주 라인 단계 + LP 칸 */
+.main-detail-cell { display: flex; gap: 6px; }
+.edit-table .main-detail-cell select, .edit-table .main-detail-cell input { min-width: 80px; }
+.main-detail-cell select[hidden] { display: none; }
 /* 화면에는 안 보이지만 키보드와 화면 낭독기는 쓸 수 있게 숨긴다 */
 .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 

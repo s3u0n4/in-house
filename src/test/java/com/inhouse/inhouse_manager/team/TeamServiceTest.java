@@ -117,8 +117,8 @@ class TeamServiceTest {
 
     @Test
     void 마스터_이상은_LP로_점수를_계산한다() {
-        // 탑만 챌린저 1000LP(10점)라고 적은 사람 → 탑에 배치되고 "챌린저 1000LP"로 보인다
-        Long ace = playerRepository.save(new Player("챌린저", "chall#1", Position.MID, null,
+        // 주 라인인 탑을 챌린저 1000LP(10점)라고 적은 사람 → 탑에 배치되고 "챌린저 1000LP"로 보인다
+        Long ace = playerRepository.save(new Player("챌린저", "chall#1", Position.TOP, null,
                 new LaneTiers(Tier.CHALLENGER, 1000, Tier.GOLD, null, Tier.GOLD, null, Tier.GOLD, null, Tier.GOLD, null))).getId();
         List<Long> withAce = new ArrayList<>(ids.subList(0, 9));
         withAce.add(ace);

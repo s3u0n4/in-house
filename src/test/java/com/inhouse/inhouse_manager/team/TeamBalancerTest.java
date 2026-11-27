@@ -381,17 +381,26 @@ class TeamBalancerTest {
         assertThat(new Assignment(subTopGold, Position.TOP).matchupPower()).isEqualTo(3.0);
     }
 
-    @Test
-    void 라인마다_티어_한_단계_이내면_라인별_밸런스가_맞다() {
-        Candidate mainTopGold = flex(1, Tier.GOLD, Position.TOP, null);
+    /** 주 라인 탑의 세부 티어(단계 + LP)까지 적은 사람. 나머지 라인은 골드 */
+    private static Candidate mainTop(long id, Tier tier, int division, int lp) {
+        return new Candidate(id, "p" + id, Position.TOP, null, "-", 4, 0.5,
+                new LaneTiers(tier, Tier.tierLp(division, lp), Tier.GOLD, null, Tier.GOLD, null, Tier.GOLD, null, Tier.GOLD, null));
+    }
 
-        assertThat(topMatchup(mainTopGold, flex(2, Tier.GOLD, Position.TOP, null)).unbalancedLanes()).isEmpty();
-        assertThat(topMatchup(mainTopGold, flex(3, Tier.SILVER, Position.TOP, null)).unbalancedLanes()).isEmpty();
-        assertThat(topMatchup(mainTopGold, flex(4, Tier.BRONZE, Position.TOP, null)).unbalancedLanes())
+    @Test
+    void 맞라인_차이가_200점_이내면_라인별_밸런스가_맞다() {
+        // 2026-11-28 사용자 요청: 맞라인 차이는 최대 200점 (예: 브론즈 1 0LP와 실버 3 0LP). 티어 1개 = 400점
+        Candidate bronze1 = mainTop(1, Tier.BRONZE, 1, 0);
+
+        assertThat(topMatchup(bronze1, mainTop(2, Tier.SILVER, 3, 0)).unbalancedLanes()).isEmpty();
+        assertThat(topMatchup(bronze1, mainTop(3, Tier.SILVER, 3, 1)).unbalancedLanes()).containsExactly(Position.TOP);
+        // 같은 티어라도 4단계와 1단계는 300점 차이
+        assertThat(topMatchup(mainTop(4, Tier.GOLD, 4, 0), mainTop(5, Tier.GOLD, 1, 0)).unbalancedLanes())
                 .containsExactly(Position.TOP);
-        // 부 라인 골드는 맞대결에서 실버로 보니 브론즈 주 라인과는 한 단계 차이
-        assertThat(topMatchup(flex(5, Tier.GOLD, Position.JUNGLE, Position.TOP), flex(6, Tier.BRONZE, Position.TOP, null))
-                .unbalancedLanes()).isEmpty();
+        // 부 라인 골드는 맞대결에서 실버(4단계 0LP)로 본다 → 주 라인 실버 3 이하와는 200점 이내
+        Candidate subTopGold = flex(6, Tier.GOLD, Position.JUNGLE, Position.TOP);
+        assertThat(topMatchup(mainTop(7, Tier.SILVER, 3, 0), subTopGold).unbalancedLanes()).isEmpty();
+        assertThat(topMatchup(mainTop(8, Tier.SILVER, 1, 0), subTopGold).unbalancedLanes()).containsExactly(Position.TOP);
     }
 
     @Test

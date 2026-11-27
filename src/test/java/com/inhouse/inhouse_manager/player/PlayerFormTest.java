@@ -45,16 +45,40 @@ class PlayerFormTest {
     }
 
     @Test
-    void LP는_0부터_3000까지다() {
+    void 마스터_이상_주_라인의_LP는_0부터_3000까지다() {
         PlayerForm form = validForm();
-        form.setMidLp(0);
+        form.setMainLp(0);
         assertThat(errorFields(form)).isEmpty();
-        form.setMidLp(3000);
+        form.setMainLp(3000);
         assertThat(errorFields(form)).isEmpty();
 
-        form.setMidLp(-1);
-        assertThat(errorFields(form)).containsExactly("midLp");
-        form.setMidLp(3001);
-        assertThat(errorFields(form)).containsExactly("midLp");
+        form.setMainLp(-1);
+        assertThat(errorFields(form)).containsExactly("mainLp");
+        form.setMainLp(3001);
+        assertThat(errorFields(form)).containsExactly("mainLp");
+    }
+
+    @Test
+    void 마스터_아래_주_라인은_단계가_필수이고_LP는_0부터_99까지다() {
+        PlayerForm form = validForm();
+        form.setMidTier(Tier.GOLD);
+        assertThat(errorFields(form)).containsExactly("mainDivisionChosen");
+
+        form.setMainDivision(2);
+        assertThat(errorFields(form)).isEmpty();
+        form.setMainLp(99);
+        assertThat(errorFields(form)).isEmpty();
+
+        form.setMainLp(100);
+        assertThat(errorFields(form)).containsExactly("mainLpInDivision");
+        form.setMainLp(50);
+        form.setMainDivision(5);
+        assertThat(errorFields(form)).containsExactly("mainDivision");
+    }
+
+    @Test
+    void 주_라인이_아닌_라인은_티어만_고르면_된다() {
+        // 주 라인(미드)은 마스터라서 단계가 없어도 되고, 골드인 다른 라인들은 단계를 묻지 않는다
+        assertThat(errorFields(validForm())).isEmpty();
     }
 }
