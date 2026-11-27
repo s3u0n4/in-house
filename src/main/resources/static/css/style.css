@@ -142,6 +142,7 @@ main.auth .flash, main.auth .alert { margin: 0 0 16px; }
     cursor: pointer; transition: background .15s, color .15s, border-color .15s;
 }
 .btn:hover { background: var(--surface-2); border-color: var(--accent); color: var(--accent-strong); }
+.btn:disabled, .btn:disabled:hover { background: #f1f4f8; border-color: var(--line); color: var(--dim); cursor: not-allowed; transform: none; }
 .btn:active { transform: translateY(1px); }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn.primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); color: #fff; }

@@ -47,6 +47,13 @@ public class TeamController {
         }
 
         model.addAttribute("shuffleOptionCount", teamService.fairSwapOptions(split).size());
+        // 라인끼리 실력이 안 맞는데 다른 라인으로 팀 전력을 맞춘 결과면 랜덤 교체를 막는다 (주소에 shuffle을 직접 넣어도)
+        List<Position> unbalancedLanes = split.unbalancedLanes();
+        model.addAttribute("unbalancedLanes", unbalancedLanes);
+        if (shuffle != null && !unbalancedLanes.isEmpty()) {
+            model.addAttribute("errorMessage", "라인별 밸런스가 맞지 않아서 랜덤으로 바꿀 수 없어요.");
+            shuffle = null;
+        }
         Set<Position> swappedPositions = Set.of();
         if (shuffle != null) {
             swappedPositions = teamService.pairsToSwap(split, shuffle);

@@ -30,6 +30,8 @@ public class TeamBalancer {
      * 라인별 티어를 넣은 사람은 그 라인의 티어를 그대로 쓰고 감점하지 않는다.
      */
     static final double OFF_ROLE_PENALTY = 1.0;
+    /** 라인 맞대결 차이가 모든 라인에서 이 값(티어 1단계) 이하여야 "라인별 밸런스가 맞다"고 보고 랜덤 교체를 허용한다 */
+    static final double LANE_BALANCE_LIMIT = 1.0;
 
     private static final List<int[]> POSITION_ORDERS = permutations(TEAM_SIZE);
 
@@ -151,6 +153,21 @@ public class TeamBalancer {
                 diff += Math.abs(blue.assignments().get(i).matchupPower() - red.assignments().get(i).matchupPower());
             }
             return diff;
+        }
+
+        /**
+         * 맞대결 차이가 LANE_BALANCE_LIMIT보다 큰 라인 (2026-11-28). 비어 있으면 라인마다 상대가 비슷해서 랜덤 교체를 할 수 있다.
+         * 비어 있지 않으면 라인끼리는 안 맞고 다른 라인으로 팀 전력을 맞춘 것이라, 그 라인을 맞바꾸면 균형이 깨진다.
+         */
+        public List<Position> unbalancedLanes() {
+            List<Position> lanes = new ArrayList<>();
+            for (int i = 0; i < TEAM_SIZE; i++) {
+                Assignment blueSlot = blue.assignments().get(i);
+                if (Math.abs(blueSlot.matchupPower() - red.assignments().get(i).matchupPower()) > LANE_BALANCE_LIMIT + 1e-9) {
+                    lanes.add(blueSlot.position());
+                }
+            }
+            return lanes;
         }
 
         /** 불균형 점수. 작을수록 공평하다 */

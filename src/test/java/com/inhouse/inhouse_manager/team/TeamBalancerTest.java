@@ -382,6 +382,36 @@ class TeamBalancerTest {
     }
 
     @Test
+    void 라인마다_티어_한_단계_이내면_라인별_밸런스가_맞다() {
+        Candidate mainTopGold = flex(1, Tier.GOLD, Position.TOP, null);
+
+        assertThat(topMatchup(mainTopGold, flex(2, Tier.GOLD, Position.TOP, null)).unbalancedLanes()).isEmpty();
+        assertThat(topMatchup(mainTopGold, flex(3, Tier.SILVER, Position.TOP, null)).unbalancedLanes()).isEmpty();
+        assertThat(topMatchup(mainTopGold, flex(4, Tier.BRONZE, Position.TOP, null)).unbalancedLanes())
+                .containsExactly(Position.TOP);
+        // 부 라인 골드는 맞대결에서 실버로 보니 브론즈 주 라인과는 한 단계 차이
+        assertThat(topMatchup(flex(5, Tier.GOLD, Position.JUNGLE, Position.TOP), flex(6, Tier.BRONZE, Position.TOP, null))
+                .unbalancedLanes()).isEmpty();
+    }
+
+    @Test
+    void 다른_라인으로_팀_전력을_맞췄으면_라인별_밸런스가_맞지_않다() {
+        // 다이아 1명, 아이언 1명, 골드 8명: 다이아 + 아이언 팀 대 골드 팀으로 합은 20 대 20이지만
+        // 다이아와 아이언이 서는 라인은 골드와 3단계씩 차이 난다
+        Tier[] tiers = {Tier.DIAMOND, Tier.IRON,
+                Tier.GOLD, Tier.GOLD, Tier.GOLD, Tier.GOLD, Tier.GOLD, Tier.GOLD, Tier.GOLD, Tier.GOLD};
+        List<Candidate> candidates = new ArrayList<>();
+        for (int i = 0; i < tiers.length; i++) {
+            candidates.add(flex(i + 1, tiers[i]));
+        }
+
+        TeamSplit split = teamBalancer.split(candidates);
+
+        assertThat(split.powerDiff()).isLessThan(1e-9);
+        assertThat(split.unbalancedLanes()).hasSize(2);
+    }
+
+    @Test
     void 라인별_티어가_없는_사람은_맞대결에서_감점을_두_번_하지_않는다() {
         Candidate noLaneTiers = new Candidate(1L, "p1", Position.JUNGLE, Position.TOP, "골드", 4, 0.5);
         Assignment atTop = new Assignment(noLaneTiers, Position.TOP);
