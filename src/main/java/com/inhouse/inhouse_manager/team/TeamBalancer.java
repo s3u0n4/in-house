@@ -85,6 +85,15 @@ public class TeamBalancer {
             return tierScore() + player.ratingBonus() - positionPenalty();
         }
 
+        /**
+         * 라인 맞대결에서 쓰는 전력 (2026-11-28). 라인별 티어가 있어도 주 포지션이 아니면 낮게 본다: 부 포지션 -1, 그 외 -2.
+         * 그래서 부 라인으로 간 사람은 자기 라인 티어보다 낮은 주 라인 상대와 맞붙게 된다. 팀 전력(power)에는 넣지 않는다.
+         * 라인별 티어가 없는 사람은 power()에 이미 같은 감점이 들어 있어서 power()와 같다.
+         */
+        public double matchupPower() {
+            return tierScore() + player.ratingBonus() - (2 - fit()) * OFF_ROLE_PENALTY;
+        }
+
         public String fitLabel() {
             return switch (fit()) {
                 case 2 -> "주";
@@ -134,11 +143,12 @@ public class TeamBalancer {
          * 라인 맞대결 차이: 블루 탑 ↔ 레드 탑, 블루 정글 ↔ 레드 정글 … 같은 라인끼리 전력 차이를 더한 값 (2026-11-26).
          * 두 팀 합이 같아도 "탑은 다이아 대 아이언, 미드는 아이언 대 다이아"처럼 라인마다 한쪽이 압도하면 커진다.
          * 라인끼리 비슷하면 그 두 사람을 맞바꿔도(랜덤 교체) 균형이 거의 그대로다.
+         * 주 라인 대 부 라인처럼 맞붙으면 부 라인 쪽을 낮게 본다 (Assignment.matchupPower).
          */
         public double laneDiff() {
             double diff = 0;
             for (int i = 0; i < TEAM_SIZE; i++) {
-                diff += Math.abs(blue.assignments().get(i).power() - red.assignments().get(i).power());
+                diff += Math.abs(blue.assignments().get(i).matchupPower() - red.assignments().get(i).matchupPower());
             }
             return diff;
         }

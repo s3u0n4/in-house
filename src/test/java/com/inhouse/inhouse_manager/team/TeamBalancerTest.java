@@ -242,12 +242,16 @@ class TeamBalancerTest {
 
     /** 한 라인만 다이아(7)이고 나머지는 브론즈(2)인 사람. 주 포지션은 모두 미드로 둔다 */
     private static Candidate laneSpecialist(long id, Position strongLane) {
+        return laneSpecialist(id, strongLane, Position.MID);
+    }
+
+    private static Candidate laneSpecialist(long id, Position strongLane, Position main) {
         Tier[] tiers = new Tier[5];
         for (Position position : Position.values()) {
             tiers[position.ordinal()] = position == strongLane ? Tier.DIAMOND : Tier.BRONZE;
         }
         LaneTiers lanes = new LaneTiers(tiers[0], tiers[1], tiers[2], tiers[3], tiers[4]);
-        return new Candidate(id, "p" + id, Position.MID, null, "골드", 4, 0.5, lanes);
+        return new Candidate(id, "p" + id, main, null, "골드", 4, 0.5, lanes);
     }
 
     @Test
@@ -298,11 +302,12 @@ class TeamBalancerTest {
 
     @Test
     void 라인별_티어가_있는_사람과_없는_사람을_같이_나눈다() {
-        // 라인별 티어가 있는 5명(라인마다 한 명씩 다이아) + 없는 5명(라인마다 한 명씩 주포, 솔랭 다이아)
+        // 라인별 티어가 있는 5명(라인마다 한 명씩 다이아, 그 라인이 주 포지션) + 없는 5명(라인마다 한 명씩 주포, 솔랭 다이아)
+        // 주 라인이 아닌 라인에 가면 맞대결에서 낮게 보므로(2026-11-28), 잘하는 라인을 주 포지션으로 둔다
         List<Candidate> candidates = new ArrayList<>();
         long id = 1;
         for (Position position : Position.values()) {
-            candidates.add(laneSpecialist(id++, position));
+            candidates.add(laneSpecialist(id++, position, position));
             candidates.add(candidate(id++, position, 7));
         }
 
@@ -337,6 +342,52 @@ class TeamBalancerTest {
             assertThat(split.blue().assignments().get(i).tierScore())
                     .isEqualTo(split.red().assignments().get(i).tierScore());
         }
+    }
+
+    /** 다섯 라인 모두 같은 티어인 사람에 주/부 포지션을 붙인다 */
+    private static Candidate flex(long id, Tier tier, Position main, Position sub) {
+        return new Candidate(id, "p" + id, main, sub, "-", 4, 0.5, new LaneTiers(tier, tier, tier, tier, tier));
+    }
+
+    /** 탑만 정해 두고 나머지 네 라인은 서로 같은 골드끼리 붙인 팀 나누기 */
+    private static TeamSplit topMatchup(Candidate blueTop, Candidate redTop) {
+        List<Assignment> blue = new ArrayList<>(List.of(new Assignment(blueTop, Position.TOP)));
+        List<Assignment> red = new ArrayList<>(List.of(new Assignment(redTop, Position.TOP)));
+        long id = 100;
+        for (Position position : List.of(Position.JUNGLE, Position.MID, Position.ADC, Position.SUPPORT)) {
+            blue.add(new Assignment(flex(id++, Tier.GOLD, position, null), position));
+            red.add(new Assignment(flex(id++, Tier.GOLD, position, null), position));
+        }
+        return new TeamSplit(new TeamBalancer.Lineup(blue), new TeamBalancer.Lineup(red));
+    }
+
+    @Test
+    void 라인_맞대결에서는_주_포지션이_아닌_사람을_낮게_본다() {
+        // 2026-11-28 사용자 요청: 블루 탑은 주 라인, 레드 탑은 부 라인이면 주 라인 쪽을 더 낮은 티어로 맞춘다
+        Candidate mainTopGold = flex(1, Tier.GOLD, Position.TOP, null);
+        Candidate mainTopSilver = flex(2, Tier.SILVER, Position.TOP, null);
+        Candidate subTopGold = flex(3, Tier.GOLD, Position.JUNGLE, Position.TOP);
+        Candidate otherTopGold = flex(4, Tier.GOLD, Position.JUNGLE, Position.MID);
+
+        // 둘 다 골드라도 부 라인은 한 단계(-1), 그 외 라인은 두 단계(-2) 낮게 보고 맞대결을 비교한다
+        assertThat(topMatchup(mainTopGold, subTopGold).laneDiff()).isEqualTo(1.0);
+        assertThat(topMatchup(mainTopGold, otherTopGold).laneDiff()).isEqualTo(2.0);
+        // 그래서 부 라인 골드에게는 주 라인 실버가 딱 맞는 상대다
+        assertThat(topMatchup(mainTopSilver, subTopGold).laneDiff()).isEqualTo(0.0);
+        // 둘 다 부 라인이면 서로 같은 만큼 낮게 보니 차이가 없다
+        assertThat(topMatchup(subTopGold, flex(5, Tier.GOLD, Position.MID, Position.TOP)).laneDiff()).isEqualTo(0.0);
+        // 팀 전력은 지금처럼 라인별 티어 그대로 (감점 없음)
+        assertThat(new Assignment(subTopGold, Position.TOP).power()).isEqualTo(4.0);
+        assertThat(new Assignment(subTopGold, Position.TOP).matchupPower()).isEqualTo(3.0);
+    }
+
+    @Test
+    void 라인별_티어가_없는_사람은_맞대결에서_감점을_두_번_하지_않는다() {
+        Candidate noLaneTiers = new Candidate(1L, "p1", Position.JUNGLE, Position.TOP, "골드", 4, 0.5);
+        Assignment atTop = new Assignment(noLaneTiers, Position.TOP);
+
+        assertThat(atTop.power()).isEqualTo(3.0);
+        assertThat(atTop.matchupPower()).isEqualTo(3.0);
     }
 
     @Test
