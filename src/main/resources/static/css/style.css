@@ -79,9 +79,11 @@ a:hover { color: var(--accent); }
 
 /* ---------- 본문 ---------- */
 main.container { padding-top: 36px; padding-bottom: 64px; }
-.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
+/* 모든 화면의 제목 줄은 가운데: 제목, 설명, 버튼이 위에서 아래로 */
+.page-head { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; margin-bottom: 24px; }
+.page-head .actions { justify-content: center; }
 .page-head h1 { margin: 0; font-weight: 800; font-size: 28px; line-height: 1.25; letter-spacing: -.01em; }
-.page-head .sub { color: var(--muted); margin: 6px 0 0; }
+.page-head .sub { color: var(--muted); margin: 6px auto 0; max-width: 620px; }
 .page-head .sub strong { color: var(--accent-strong); font-size: 17px; }
 .riot-id { color: var(--muted); font-size: 16px; font-weight: 500; margin-left: 8px; }
 
@@ -95,23 +97,32 @@ h2 { display: flex; align-items: center; gap: 10px; margin: 32px 0 12px; font-we
 .card { padding: 28px; }
 .card > h1:first-child { margin-top: 0; font-weight: 800; font-size: 24px; }
 
-/* ---------- 가운데 배치 화면 (등록·수정, 로그인, 관리자) ---------- */
-/* centered: 제목과 설명을 가운데로. 표가 있는 관리자 화면에 쓴다 */
-main.centered .page-head { flex-direction: column; align-items: center; text-align: center; }
-main.centered .page-head .sub { max-width: 620px; }
-main.centered > h2 { justify-content: center; }
-/* narrow: 입력 화면. 폭을 줄여서 화면 가운데에 카드 하나 */
+/* ---------- 가운데 배치 (2026-11-28: 모든 화면) ---------- */
+/* 본문 바로 아래의 소제목, 설명 문단, 버튼 줄, 탭도 가운데로 */
+main.container > h2, main.container > form > h2 { justify-content: center; }
+main.container > p.muted { max-width: 820px; margin-left: auto; margin-right: auto; text-align: center; }
+main.container .actions { justify-content: center; }
+.flash { text-align: center; }
+/* narrow: 입력 화면, 오류 화면. 폭을 줄여서 화면 가운데에 카드 하나 */
 main.container.narrow { max-width: 760px; }
 main.narrow .form { max-width: none; }
 main.narrow .inline-fields, main.narrow .lane-fields { max-width: none; }
-main.narrow .form .actions { justify-content: center; margin-top: 8px; }
-/* auth: 로그인. 헤더 아래 남은 높이의 세로 가운데 */
+main.narrow .form .actions { margin-top: 8px; }
+.message-card { text-align: center; }
+/* auth: 로그인. 큰 카드를 헤더 아래 남은 높이의 세로 가운데에 */
 main.container.auth {
-    max-width: 440px; min-height: calc(100vh - 65px);
+    max-width: 540px; min-height: calc(100vh - 65px);
     display: flex; flex-direction: column; justify-content: center; padding-top: 32px;
 }
+main.auth .page-head h1 { font-size: 32px; }
+main.auth .page-head .sub { font-size: 16px; }
+main.auth .card { padding: 44px 40px; }
 main.auth .form { max-width: none; }
-main.auth .form .actions .btn { flex: 1; }
+main.auth .form-row { margin-bottom: 22px; }
+main.auth .form-row .title { font-size: 15px; }
+main.auth input { min-height: 54px; font-size: 16px; padding: 0 16px; }
+main.auth .form .actions { margin-top: 30px; }
+main.auth .form .actions .btn { flex: 1; min-height: 52px; font-size: 16px; }
 main.auth .flash, main.auth .alert { margin: 0 0 16px; }
 
 /* ---------- 안내 문구 ---------- */
@@ -200,7 +211,7 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
 input[type=checkbox], input[type=radio] { width: 17px; height: 17px; cursor: pointer; }
 .radio-group { display: flex; gap: 22px; min-height: 44px; align-items: center; }
 .radio-group label { display: flex; gap: 8px; align-items: center; cursor: pointer; font-weight: 600; }
-.inline-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 700px; }
+.inline-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 700px; margin: 0 auto; }
 /* 라인별 티어 입력 (탑 ~ 서폿 5칸) */
 .lane-fields {
     border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2);
@@ -314,7 +325,7 @@ body:has(.drag-ghost) { cursor: grabbing; user-select: none; }
 .swap-mark { font-size: 12px; font-weight: 700; color: var(--accent-strong); margin-left: 6px; }
 
 /* ---------- 요약 숫자 ---------- */
-.summary { display: flex; gap: 48px; flex-wrap: wrap; }
+.summary { display: flex; justify-content: center; gap: 48px; flex-wrap: wrap; text-align: center; }
 .summary .value { font-weight: 800; font-size: 40px; line-height: 1; font-variant-numeric: tabular-nums; }
 .summary > div:nth-child(2) .value { color: var(--blue-text); }
 .summary > div:nth-child(3) .value { color: var(--red-text); }
@@ -346,13 +357,14 @@ body:has(.drag-ghost) { cursor: grabbing; user-select: none; }
     .page-head h1 { font-size: 24px; }
     .card { padding: 20px; }
     main.container.auth { min-height: auto; padding-top: 40px; }
+    main.auth .card { padding: 28px 20px; }
     .summary { gap: 28px; }
     .summary .value { font-size: 34px; }
 }
 
 /* ---------- 랭킹 ---------- */
 /* 정렬 탭 (승률 / 다승 / 전력) */
-.tabs { display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; }
+.tabs { display: flex; width: fit-content; gap: 4px; padding: 4px; margin: 0 auto 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; }
 .tabs a { padding: 7px 18px; border-radius: 999px; color: var(--text-2); font-weight: 600; font-size: 14px; }
 .tabs a:hover { color: var(--accent-strong); }
 .tabs a.active { background: var(--accent); color: #fff; }

@@ -8,8 +8,8 @@
 <body>
 <th:block th:replace="~{fragments/layout :: header('')}"></th:block>
 
-<main class="container">
-    <div class="card">
+<main class="container narrow">
+    <div class="card message-card">
         <h1>문제가 생겼습니다 <span class="muted" th:text="|(${status})|">(500)</span></h1>
         <p class="muted">잠시 후 다시 시도해 주세요. 계속되면 서버 로그를 확인하세요.</p>
         <a class="btn" th:href="@{/}">처음으로</a>

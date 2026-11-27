@@ -9,7 +9,7 @@
 <body>
 <th:block th:replace="~{fragments/layout :: header('players')}"></th:block>
 
-<main class="container centered narrow">
+<main class="container narrow">
     <div class="page-head">
         <div>
             <h1 th:text="${editing} ? '플레이어 수정' : (${isAdmin} ? '플레이어 등록' : '등록 신청')">플레이어 등록</h1>
